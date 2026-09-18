@@ -57,3 +57,20 @@ The response contains a `guard.decision` and individual checks. It always sets
 engine, customer approval flow, payment, persistent ledger, or Viseca API
 connection. Its in-memory retry and rate state resets when restarted. Bind it
 only to local loopback as shown; it has no authentication.
+
+## Hosted Viseca API connection
+
+`viseca_client.py` is the Python equivalent of the connection commands in the
+company's technical guide. It currently makes read-only calls:
+
+```bash
+python3 -B live_layer/viseca_client.py health
+export TEAM_API_KEY='<team key from Viseca>'
+python3 -B live_layer/viseca_client.py bootstrap
+python3 -B live_layer/viseca_client.py reference-data
+```
+
+`LEASH_BASE_URL` is optional and defaults to the URL in the Viseca guide. The
+key stays in the environment; never commit it. These calls do not start a
+scenario or submit a decision. The hosted worker will use this client after the
+full customer-policy engine is connected and tested.
