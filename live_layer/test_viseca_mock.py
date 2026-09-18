@@ -43,6 +43,7 @@ class VisecaMockTests(unittest.TestCase):
         envelope = state.next_request()
         self.assertEqual(envelope["authorization_id"], MOCK_AUTHORIZATION_ID)
         self.assertEqual(envelope["data"]["type"], "authorization.request")
+        self.assertEqual(state.evaluate()["recommended_decision"], "approve")
         self.assertIsNone(state.next_request())
         body = {"authorization_id": MOCK_AUTHORIZATION_ID, "decision": "step_up",
                 "reason_codes": ["customer_confirmation"]}
@@ -55,8 +56,9 @@ class VisecaMockTests(unittest.TestCase):
         self.assertIsNotNone(state.next_request())
 
     def test_root_page_explains_the_local_demo(self):
-        self.assertIn("Viseca purchase request rehearsal", DEMO_PAGE)
+        self.assertIn("Decision Lab", DEMO_PAGE)
         self.assertIn("/v1/decision-requests/next?wait=0", DEMO_PAGE)
+        self.assertIn("/mock/evaluate", DEMO_PAGE)
         self.assertIn("/mock/reset", DEMO_PAGE)
 
 

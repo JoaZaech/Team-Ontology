@@ -14,76 +14,16 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
+from guardian import MerchantHistory
+from rulebook import evaluate_request
+
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "viseca-2026" / "data"
 MOCK_KEY = "mock-team-key"  # Public dummy value, only for local contract rehearsal.
 MOCK_RUN_ID = "RUN_MOCK_0001"
 MOCK_AUTHORIZATION_ID = "MOCK_AU0001"
 
-DEMO_PAGE = """<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Viseca local API mock</title>
-  <style>
-    :root { color-scheme: light; font-family: system-ui, sans-serif; background: #f4f6fa; color: #16243a; }
-    body { margin: 0; padding: 32px 20px; }
-    main { max-width: 760px; margin: 0 auto; }
-    .card { background: white; border: 1px solid #dce3eb; border-radius: 16px; padding: 26px; box-shadow: 0 8px 30px #16304a0b; }
-    h1 { margin: 0 0 8px; font-size: 1.8rem; }
-    p { line-height: 1.5; color: #46566c; }
-    .tag { display: inline-block; padding: 5px 10px; border-radius: 100px; background: #e5f5ed; color: #166343; font-size: .8rem; font-weight: 700; margin-bottom: 18px; }
-    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 22px 0; }
-    button { border: 0; border-radius: 9px; padding: 11px 15px; font: inherit; font-weight: 650; cursor: pointer; background: #174ea6; color: white; }
-    button.secondary { background: #e9eef5; color: #20344d; }
-    button:disabled { opacity: .5; cursor: wait; }
-    #status { min-height: 24px; font-weight: 600; color: #244467; }
-    pre { white-space: pre-wrap; overflow-wrap: anywhere; background: #101c2f; color: #e7f0ff; padding: 18px; border-radius: 10px; max-height: 480px; overflow: auto; font-size: .84rem; }
-    small { color: #66758a; }
-  </style>
-</head>
-<body><main><div class="card">
-  <span class="tag">LOCAL MOCK · NO REAL PAYMENT</span>
-  <h1>Viseca purchase request rehearsal</h1>
-  <p>This page serves one synthetic purchase from the company's SCEN0000 connection check. Load the request, inspect its buyer and merchant details, and record a sample customer-review decision.</p>
-  <div class="actions">
-    <button id="load">Load mock request</button>
-    <button id="decide" class="secondary">Record step-up</button>
-    <button id="reset" class="secondary">Reset demo</button>
-  </div>
-  <div id="status" role="status" aria-live="polite">Ready.</div>
-  <pre id="output">The request will appear here.</pre>
-  <small>API base: http://127.0.0.1:8082 · Dummy key: mock-team-key</small>
-</div></main>
-<script>
-const headers = {Authorization: 'Bearer mock-team-key'};
-const status = document.getElementById('status');
-const output = document.getElementById('output');
-async function show(response) {
-  if (response.status === 204) { status.textContent = 'Request already delivered. Use Reset demo to replay it.'; return; }
-  const data = await response.json();
-  output.textContent = JSON.stringify(data, null, 2);
-  status.textContent = response.ok ? 'Request completed.' : `API error: ${response.status}`;
-}
-document.getElementById('load').onclick = async () => {
-  try { status.textContent = 'Loading…'; await show(await fetch('/v1/decision-requests/next?wait=0', {headers})); }
-  catch (error) { status.textContent = `Connection failed: ${error.message}`; }
-};
-document.getElementById('decide').onclick = async () => {
-  try {
-    status.textContent = 'Recording…';
-    await show(await fetch('/v1/authorizations/MOCK_AU0001/decision', {
-      method: 'POST', headers: {...headers, 'Content-Type': 'application/json'},
-      body: JSON.stringify({authorization_id: 'MOCK_AU0001', decision: 'step_up', reason_codes: ['customer_confirmation']})
-    }));
-  } catch (error) { status.textContent = `Connection failed: ${error.message}`; }
-};
-document.getElementById('reset').onclick = async () => {
-  try { status.textContent = 'Resetting…'; await show(await fetch('/mock/reset', {method: 'POST', headers})); }
-  catch (error) { status.textContent = `Connection failed: ${error.message}`; }
-};
-</script></body></html>"""
+DEMO_PAGE = Path(__file__).with_name("mock_ui.html").read_text(encoding="utf-8")
 
 
 def _csv_row(path: Path, key: str, value: str) -> dict[str, str]:
@@ -160,18 +100,22 @@ def build_connection_event(data_dir: Path = DATA_DIR, now: datetime | None = Non
 class MockVisecaState:
     def __init__(self, data_dir: Path = DATA_DIR):
         self.data_dir = data_dir
+        self.history = MerchantHistory.from_data_dir(data_dir)
         self.delivered = False
         self.decision: dict[str, Any] | None = None
+        self.event: dict[str, Any] | None = None
 
     def reset(self) -> None:
         self.delivered = False
         self.decision = None
+        self.event = None
 
     def next_request(self) -> dict[str, Any] | None:
         if self.delivered:
             return None
         self.delivered = True
         event = build_connection_event(self.data_dir)
+        self.event = event
         return {
             "run_id": MOCK_RUN_ID,
             "event_id": "EVT_MOCK_0001",
@@ -181,6 +125,11 @@ class MockVisecaState:
             "occurred_at": event["runtime"]["received_at"],
             "data": event,
         }
+
+    def evaluate(self) -> dict[str, Any]:
+        if self.event is None:
+            raise ValueError("request_not_delivered")
+        return evaluate_request(self.event, self.history)
 
     def record_decision(self, authorization_id: str, body: Any) -> dict[str, Any]:
         if authorization_id != MOCK_AUTHORIZATION_ID:
@@ -234,6 +183,12 @@ def make_handler(state: MockVisecaState):
             if path == "/mock/reset":
                 state.reset()
                 self.send_json(200, {"status": "reset", "run_id": MOCK_RUN_ID})
+                return
+            if path == "/mock/evaluate":
+                try:
+                    self.send_json(200, state.evaluate())
+                except ValueError as exc:
+                    self.send_json(409, {"error": str(exc)})
                 return
             prefix, suffix = "/v1/authorizations/", "/decision"
             if not path.startswith(prefix) or not path.endswith(suffix):

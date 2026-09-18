@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Viseca Decision Lab</title>
+  <style>
+    :root { font-family: Inter, ui-sans-serif, system-ui, sans-serif; color: #14253d; background: #f3f6f9; }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .shell { max-width: 1120px; margin: auto; padding: 34px 24px 64px; }
+    header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 28px; }
+    .eyebrow { font-size: .78rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #156e78; }
+    h1 { font-size: clamp(2rem, 4vw, 3.2rem); line-height: 1.05; letter-spacing: -.04em; margin: 8px 0 10px; }
+    .intro { color: #5b6b7d; line-height: 1.5; margin: 0; max-width: 650px; }
+    .pill { background: #dff3ed; color: #176143; border-radius: 99px; padding: 9px 13px; white-space: nowrap; font-size: .8rem; font-weight: 800; }
+    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 22px; }
+    .step { background: #fff; border: 1px solid #dce4eb; border-radius: 16px; padding: 17px; display: flex; gap: 12px; align-items: center; color: #69788b; }
+    .step.active { border-color: #68aaa3; box-shadow: 0 4px 20px #08745b11; color: #164f54; }
+    .step.done { background: #e7f7ee; border-color: #82caa4; color: #155d3a; }
+    .number { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: #e8eef4; font-weight: 800; flex: none; }
+    .step.done .number { background: #1b9662; color: white; }
+    .step strong { display: block; font-size: .92rem; }
+    .step small { display: block; margin-top: 2px; font-size: .75rem; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .card { background: #fff; border: 1px solid #dce4eb; border-radius: 18px; padding: 24px; box-shadow: 0 10px 30px #1c35530a; min-height: 430px; }
+    h2 { margin: 0 0 5px; font-size: 1.2rem; }
+    .sub { color: #64758a; margin: 0 0 20px; font-size: .92rem; line-height: 1.45; }
+    .facts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 18px 0; }
+    .fact { background: #f5f8fb; border-radius: 10px; padding: 11px; }
+    .fact span { display: block; font-size: .72rem; color: #728095; text-transform: uppercase; letter-spacing: .06em; }
+    .fact strong { display: block; margin-top: 4px; font-size: .98rem; overflow-wrap: anywhere; }
+    .empty { border: 1px dashed #c9d5df; border-radius: 12px; color: #7b8998; padding: 42px 18px; text-align: center; line-height: 1.5; }
+    button { border: 0; border-radius: 10px; padding: 11px 15px; cursor: pointer; font: inherit; font-weight: 750; }
+    button:disabled { cursor: not-allowed; opacity: .45; }
+    .primary { color: #fff; background: #176c89; }
+    .secondary { color: #24435a; background: #eaf0f5; }
+    .complete { color: #fff; background: #15915c; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 17px; }
+    .rule-wrap { position: relative; }
+    #rule-content { transition: filter .2s, opacity .2s; }
+    .processing #rule-content { filter: blur(6px); opacity: .45; pointer-events: none; }
+    #busy { display: none; position: absolute; inset: 0; align-items: center; justify-content: center; text-align: center; font-weight: 800; color: #145d70; }
+    .processing #busy { display: flex; }
+    .spinner { display: block; width: 26px; height: 26px; border: 3px solid #b8dadb; border-top-color: #146b73; border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 10px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .check { display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid #eaf0f4; }
+    .check:last-child { border: 0; }
+    .mark { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: .8rem; font-weight: 900; }
+    .pass .mark { background: #dff5e9; color: #168454; }
+    .fail .mark { background: #fce6e4; color: #b54439; }
+    .review .mark { background: #fff0d9; color: #a06614; }
+    .check strong { display: block; text-transform: capitalize; font-size: .9rem; }
+    .check p { margin: 3px 0 0; color: #66788c; font-size: .82rem; line-height: 1.35; }
+    .recommendation { background: #e8f5ed; border-radius: 10px; padding: 12px; font-weight: 800; color: #126441; margin: 14px 0; }
+    .choices { display: grid; gap: 8px; margin-top: 13px; }
+    .choice { display: flex; gap: 9px; align-items: center; border: 1px solid #dbe5ec; border-radius: 10px; padding: 10px 12px; cursor: pointer; font-weight: 650; }
+    .choice:has(input:checked) { border-color: #4a9d8d; background: #edf8f4; }
+    .choice input { accent-color: #14885b; }
+    #status { margin-top: 18px; min-height: 24px; font-weight: 650; color: #245b71; }
+    details { margin-top: 16px; font-size: .84rem; color: #5e7186; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 220px; overflow: auto; background: #11243a; color: #e7f0fa; padding: 13px; border-radius: 9px; font-size: .76rem; }
+    footer { color: #7b8898; font-size: .8rem; margin-top: 20px; }
+    @media (max-width: 760px) { .grid, .steps { grid-template-columns: 1fr; } header { display: block; } .pill { display: inline-block; margin-top: 16px; } }
+  </style>
+</head>
+<body><div class="shell">
+  <header>
+    <div><div class="eyebrow">Viseca · Local prototype</div><h1>Decision Lab</h1>
+      <p class="intro">Rehearse one purchase from the company's synthetic data. Pull the request, evaluate the customer rulebook, then choose the decision to record.</p></div>
+    <div class="pill">LOCAL MOCK · NO PAYMENT</div>
+  </header>
+  <div class="steps" aria-label="Demo progress">
+    <div class="step active" id="step-pull"><div class="number">1</div><div><strong>Pull request</strong><small>Read the queued purchase</small></div></div>
+    <div class="step" id="step-evaluate"><div class="number">2</div><div><strong>Evaluate request</strong><small>Run the rulebook</small></div></div>
+    <div class="step" id="step-submit"><div class="number">3</div><div><strong>Decision ready</strong><small>Record the result</small></div></div>
+  </div>
+  <div class="grid">
+    <section class="card"><h2>Purchase request</h2><p class="sub">Buyer, merchant, basket, and amount from the Viseca connection-check fixture.</p>
+      <div id="request-view" class="empty">No request loaded yet.</div>
+      <div class="actions"><button class="primary" id="pull">Pull request</button><button class="secondary" id="reset">Reset demo</button></div>
+      <details id="raw-details"><summary>View full request JSON</summary><pre id="raw-request">—</pre></details>
+    </section>
+    <section class="card"><h2>Rulebook decision</h2><p class="sub">The server checks the confirmed mandate, basket, amount, merchant familiarity, and attempt rate.</p>
+      <div class="rule-wrap" id="rule-wrap"><div id="rule-content"><div id="evaluation-view" class="empty">Pull a request to start evaluation.</div>
+        <div id="decision-controls" hidden><div class="choices" role="radiogroup" aria-label="Decision options">
+          <label class="choice"><input type="radio" name="decision" value="approve"> Approved</label>
+          <label class="choice"><input type="radio" name="decision" value="decline"> Not approved</label>
+          <label class="choice"><input type="radio" name="decision" value="step_up"> Human requested</label>
+        </div></div></div>
+        <div id="busy" role="status"><div><span class="spinner"></span>Evaluating request…</div></div>
+      </div>
+      <div class="actions"><button class="primary" id="evaluate" disabled>Evaluate request</button><button class="complete" id="submit" disabled>Submit decision</button></div>
+    </section>
+  </div>
+  <div id="status" role="status" aria-live="polite">Ready to pull a mock request.</div>
+  <footer>Local rehearsal only. The hosted Viseca API uses your team key and its own run lifecycle.</footer>
+</div>
+<script>
+const auth = {Authorization: 'Bearer mock-team-key'};
+const $ = id => document.getElementById(id);
+let envelope = null;
+let evaluation = null;
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+function setStatus(message) { $('status').textContent = message; }
+async function readJson(response) {
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    throw new Error(body.error || `HTTP ${response.status}`);
+  }
+  return response.json();
+}
+function setProgress(stage) {
+  ['pull','evaluate','submit'].forEach((name, index) => {
+    const el = $(`step-${name}`);
+    el.className = 'step' + (index < stage ? ' done' : index === stage ? ' active' : '');
+  });
+}
+function fact(label, value) {
+  const item = document.createElement('div'); item.className = 'fact';
+  const caption = document.createElement('span'); caption.textContent = label;
+  const strong = document.createElement('strong'); strong.textContent = String(value);
+  item.append(caption, strong); return item;
+}
+function showRequest(data) {
+  const a = data.data.authorization;
+  const box = document.createElement('div'); box.className = 'facts';
+  box.append(fact('Buyer card', a.card_id), fact('Merchant', a.merchant.merchant_name),
+    fact('Amount', `CHF ${a.billing_amount_chf.toFixed(2)}`),
+    fact('Basket', a.items.map(i => `${i.quantity} × ${i.item_name}`).join(', ')));
+  $('request-view').className = ''; $('request-view').replaceChildren(box);
+  $('raw-request').textContent = JSON.stringify(data, null, 2);
+}
+function showEvaluation(result) {
+  const panel = $('evaluation-view'); panel.className = ''; panel.replaceChildren();
+  const summary = document.createElement('div'); summary.className = 'recommendation';
+  summary.textContent = `Rulebook recommendation: ${label(result.recommended_decision)}`;
+  panel.append(summary);
+  result.checks.forEach(check => {
+    const row = document.createElement('div'); row.className = `check ${check.outcome}`;
+    const mark = document.createElement('span'); mark.className = 'mark';
+    mark.textContent = check.outcome === 'pass' ? '✓' : check.outcome === 'fail' ? '×' : '?';
+    const copy = document.createElement('div');
+    const title = document.createElement('strong'); title.textContent = check.name;
+    const detail = document.createElement('p'); detail.textContent = check.detail;
+    copy.append(title, detail); row.append(mark, copy); panel.append(row);
+  });
+  $('decision-controls').hidden = false;
+  document.querySelector(`input[name="decision"][value="${result.recommended_decision}"]`).checked = true;
+  $('submit').disabled = false;
+}
+function label(value) { return ({approve:'Approved', decline:'Not approved', step_up:'Human requested'})[value] || value; }
+$('pull').onclick = async () => {
+  try {
+    setStatus('Pulling the purchase…');
+    const response = await fetch('/v1/decision-requests/next?wait=0', {headers: auth});
+    if (response.status === 204) { setStatus('This request was already pulled. Use Reset demo to replay it.'); return; }
+    envelope = await readJson(response);
+    showRequest(envelope); $('pull').disabled = true; $('evaluate').disabled = false;
+    setProgress(1); setStatus('Request loaded. Evaluate it against the rulebook.');
+  } catch (error) { setStatus(`Could not pull request: ${error.message}`); }
+};
+$('evaluate').onclick = async () => {
+  if (!envelope) return;
+  $('evaluate').disabled = true; $('rule-wrap').classList.add('processing');
+  setStatus('Running the rulebook…');
+  try {
+    const [result] = await Promise.all([
+      fetch('/mock/evaluate', {method:'POST', headers: auth}).then(readJson), sleep(850)
+    ]);
+    evaluation = result; showEvaluation(result); setProgress(2);
+    setStatus(`Evaluation complete. Recommended: ${label(result.recommended_decision)}. Choose a decision to record.`);
+  } catch (error) { $('evaluate').disabled = false; setStatus(`Evaluation failed: ${error.message}`); }
+  finally { $('rule-wrap').classList.remove('processing'); }
+};
+$('submit').onclick = async () => {
+  if (!envelope || !evaluation) return;
+  const decision = document.querySelector('input[name="decision"]:checked')?.value;
+  if (!decision) { setStatus('Choose a decision first.'); return; }
+  $('submit').disabled = true;
+  try {
+    const body = {authorization_id: envelope.authorization_id, decision,
+      reason_codes: decision === evaluation.recommended_decision ? evaluation.reason_codes : ['manual_demo_override'],
+      engine_version: evaluation.engine_version};
+    const result = await readJson(await fetch(`/v1/authorizations/${envelope.authorization_id}/decision`, {
+      method:'POST', headers:{...auth, 'Content-Type':'application/json'}, body: JSON.stringify(body)
+    }));
+    setProgress(3); setStatus(`Decision recorded: ${label(result.decision || decision)}. Reset demo to run it again.`);
+  } catch (error) { $('submit').disabled = false; setStatus(`Could not record decision: ${error.message}`); }
+};
+$('reset').onclick = async () => {
+  try {
+    await readJson(await fetch('/mock/reset', {method:'POST', headers:auth}));
+    envelope = null; evaluation = null;
+    $('request-view').className = 'empty'; $('request-view').textContent = 'No request loaded yet.';
+    $('raw-request').textContent = '—'; $('raw-details').open = false;
+    $('evaluation-view').className = 'empty'; $('evaluation-view').textContent = 'Pull a request to start evaluation.';
+    $('decision-controls').hidden = true; $('pull').disabled = false;
+    $('evaluate').disabled = true; $('submit').disabled = true;
+    document.querySelectorAll('input[name="decision"]').forEach(input => input.checked = false);
+    setProgress(0); setStatus('Demo reset. Ready to pull a mock request.');
+  } catch (error) { setStatus(`Could not reset demo: ${error.message}`); }
+};
+</script></body></html>

@@ -88,9 +88,15 @@ In terminal 1:
 python3 -B live_layer/viseca_mock.py
 ```
 
-Open `http://127.0.0.1:8082/` in a browser for a small interactive demo page.
-The mock server must stay running in terminal 1 while the page is open. The
-page's **Reset demo** button replays the one purchase without restarting it.
+Open `http://127.0.0.1:8082/` in a browser for the interactive demo. The mock
+server must stay running in terminal 1 while the page is open. Use **Pull
+request**, **Evaluate request**, then choose **Approved**, **Not approved**, or
+**Human requested** and press the green **Submit decision** button. The rulebook
+recommends approval for the valid `SCEN0000` purchase and shows each check.
+The page blurs the checks while evaluation runs. **Reset demo** replays the one
+purchase without restarting the server. The customer-facing choice is a local
+demonstration; the hosted API still requires a confirmed mandate and its own
+decision worker.
 
 In terminal 2, from the repository root:
 
