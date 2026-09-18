@@ -1,0 +1,22 @@
+services:
+  neo4j:
+    image: neo4j:5-community
+    container_name: kg_neo4j
+    restart: unless-stopped
+    environment:
+      NEO4J_AUTH: neo4j/kg_layer_dev
+    ports:
+      - "7474:7474" # browser UI
+      - "7687:7687" # bolt
+    volumes:
+      - kg_neo4j_data:/data
+      - kg_neo4j_logs:/logs
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:7474 || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  kg_neo4j_data:
+  kg_neo4j_logs:
