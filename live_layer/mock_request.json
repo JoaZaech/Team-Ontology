@@ -1,0 +1,19 @@
+{
+  "request_id": "demo-order-001",
+  "buyer": {
+    "card_id": "CA0001",
+    "mandate_id": "TM_DEMO_GROCERY"
+  },
+  "merchant_id": "ME0001",
+  "order": {
+    "billing_amount_chf": "20.00",
+    "delivery_fee_chf": "7.00",
+    "items": [
+      {
+        "item_id": "IT0001",
+        "quantity": 1,
+        "unit_price_chf": "13.00"
+      }
+    ]
+  }
+}
