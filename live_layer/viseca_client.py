@@ -11,6 +11,7 @@ import json
 import os
 import sys
 from urllib.error import HTTPError, URLError
+from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
 
@@ -25,8 +26,13 @@ class VisecaAPIError(Exception):
 
 class VisecaClient:
     def __init__(self, base_url: str, api_key: str | None = None, timeout: float = 30):
-        if not base_url.startswith("https://"):
-            raise ValueError("LEASH_BASE_URL must use HTTPS")
+        parsed = urlparse(base_url)
+        if parsed.scheme != "https" and not (
+            parsed.scheme == "http" and parsed.hostname in ("127.0.0.1", "localhost")
+        ):
+            raise ValueError("LEASH_BASE_URL must use HTTPS or local loopback HTTP")
+        if parsed.username or parsed.password or parsed.query or parsed.fragment:
+            raise ValueError("LEASH_BASE_URL must be a plain API base URL")
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key
         self.timeout = timeout
@@ -63,10 +69,13 @@ class VisecaClient:
     def reference_data(self):
         return self.get("/v1/reference-data")
 
+    def next_request(self):
+        return self.get("/v1/decision-requests/next?wait=0")
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Read Viseca challenge API status and setup")
-    parser.add_argument("command", choices=("health", "bootstrap", "reference-data"))
+    parser.add_argument("command", choices=("health", "bootstrap", "reference-data", "next"))
     args = parser.parse_args()
     client = VisecaClient(
         os.environ.get("LEASH_BASE_URL", DEFAULT_BASE_URL),
@@ -77,6 +86,7 @@ def main() -> int:
             "health": client.health,
             "bootstrap": client.bootstrap,
             "reference-data": client.reference_data,
+            "next": client.next_request,
         }[args.command]()
     except (VisecaAPIError, ValueError) as exc:
         print(str(exc), file=sys.stderr)

@@ -74,3 +74,54 @@ python3 -B live_layer/viseca_client.py reference-data
 key stays in the environment; never commit it. These calls do not start a
 scenario or submit a decision. The hosted worker will use this client after the
 full customer-policy engine is connected and tested.
+
+## Rehearse the Viseca API locally
+
+The earlier `/v1/agent/simulate` endpoint is a simplified agent purchase
+proposal. For a **Viseca-shaped API flow**, run `viseca_mock.py`. It reads the
+company's `SCEN0000` / `AU0001` fixture and builds the complete live event
+shape defined in `authorization_event.schema.json`, with a fresh mock deadline.
+
+In terminal 1:
+
+```bash
+python3 -B live_layer/viseca_mock.py
+```
+
+Open `http://127.0.0.1:8082/` in a browser for the interactive demo. The mock
+server must stay running in terminal 1 while the page is open. Use **Pull
+request**, **Evaluate request**, then choose **Approved**, **Not approved**, or
+**Human requested** and press the green **Submit decision** button. The rulebook
+recommends approval for the valid `SCEN0000` purchase and shows each check.
+The page blurs the checks while evaluation runs. **Reset demo** replays the one
+purchase without restarting the server. The customer-facing choice is a local
+demonstration; the hosted API still requires a confirmed mandate and its own
+decision worker.
+
+In terminal 2, from the repository root:
+
+```bash
+export LEASH_BASE_URL='http://127.0.0.1:8082'
+export TEAM_API_KEY='mock-team-key'
+python3 -B live_layer/viseca_client.py health
+python3 -B live_layer/viseca_client.py bootstrap
+python3 -B live_layer/viseca_client.py reference-data
+python3 -B live_layer/viseca_client.py next
+```
+
+`next` returns one envelope whose `data` is the mock purchase request. A second
+`next` returns `null` (HTTP 204), just as an empty poll should. To try the local
+decision endpoint after receiving the request:
+
+```bash
+curl -sS "$LEASH_BASE_URL/v1/authorizations/MOCK_AU0001/decision" \
+  -H "Authorization: Bearer $TEAM_API_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{"authorization_id":"MOCK_AU0001","decision":"step_up","reason_codes":["customer_confirmation"]}'
+```
+
+The local server accepts this decision for workflow rehearsal only. Its bootstrap
+and reference-data responses are intentionally small mock responses, not copies
+of Viseca's hosted responses. Restarting the server resets the one-request run.
+The real team key is used only with the HTTPS hosted API; the dummy key above is
+only accepted by the local mock.
