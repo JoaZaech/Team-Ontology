@@ -88,6 +88,10 @@ In terminal 1:
 python3 -B live_layer/viseca_mock.py
 ```
 
+Open `http://127.0.0.1:8082/` in a browser for a small interactive demo page.
+The mock server must stay running in terminal 1 while the page is open. The
+page's **Reset demo** button replays the one purchase without restarting it.
+
 In terminal 2, from the repository root:
 
 ```bash

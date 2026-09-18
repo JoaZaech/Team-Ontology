@@ -5,7 +5,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from guardian import GuardPolicy, MerchantHistory, evaluate_guard
-from viseca_mock import MOCK_AUTHORIZATION_ID, MockVisecaState, build_connection_event
+from viseca_mock import DEMO_PAGE, MOCK_AUTHORIZATION_ID, MockVisecaState, build_connection_event
 
 
 DATA = Path(__file__).resolve().parents[1] / "viseca-2026" / "data"
@@ -50,6 +50,14 @@ class VisecaMockTests(unittest.TestCase):
                          "recorded")
         self.assertEqual(state.record_decision(MOCK_AUTHORIZATION_ID, body)["status"],
                          "already_recorded")
+        state.reset()
+        self.assertIsNone(state.decision)
+        self.assertIsNotNone(state.next_request())
+
+    def test_root_page_explains_the_local_demo(self):
+        self.assertIn("Viseca purchase request rehearsal", DEMO_PAGE)
+        self.assertIn("/v1/decision-requests/next?wait=0", DEMO_PAGE)
+        self.assertIn("/mock/reset", DEMO_PAGE)
 
 
 if __name__ == "__main__":
