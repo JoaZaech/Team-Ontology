@@ -27,6 +27,12 @@ class ObservabilityIntegrationTests(unittest.TestCase):
         self.directory.cleanup()
 
     def test_viseca_flow_records_a_replayable_resolution_chain(self):
+        policy = self.rule_client.get_policy()
+        self.rule_client.update_policy({
+            "policyId": policy["policyId"],
+            "expectedRevision": policy["revision"],
+            "patch": {"reviewTriggers": ["online_purchase"]},
+        })
         state = MockVisecaState(receipt_ledger=self.ledger, telemetry=self.telemetry, rule_client=self.rule_client)
         received_at = datetime.now(timezone.utc)
         try:
@@ -37,7 +43,7 @@ class ObservabilityIntegrationTests(unittest.TestCase):
                 {
                     "authorization_id": MOCK_AUTHORIZATION_ID,
                     "decision": "step_up",
-                    "reason_codes": ["customer_confirmation"],
+                    "reason_codes": evaluation["reason_codes"],
                 },
                 now=received_at + timedelta(seconds=1),
             )
@@ -50,8 +56,8 @@ class ObservabilityIntegrationTests(unittest.TestCase):
                 now=received_at + timedelta(seconds=2),
             )
             receipts = list(self.ledger.iter_receipts())
-            self.assertEqual(evaluation["recommended_decision"], "approve")
-            self.assertEqual([receipt["decision"] for receipt in receipts], ["approve", "step_up", "approve"])
+            self.assertEqual(evaluation["recommended_decision"], "step_up")
+            self.assertEqual([receipt["decision"] for receipt in receipts], ["step_up", "step_up", "approve"])
             self.assertEqual(receipts[-1]["final_resolution"]["spend_effect"], "approved")
             self.assertEqual(recorded["decision_receipt_hash"], receipts[1]["receipt_hash"])
             self.assertEqual(resolved["decision_receipt_hash"], receipts[2]["receipt_hash"])
@@ -74,7 +80,9 @@ class ObservabilityIntegrationTests(unittest.TestCase):
                     {"authorization_id": MOCK_AUTHORIZATION_ID, "decision": "approve"},
                     now=received_at + timedelta(seconds=9),
                 )
-            self.assertEqual(list(self.ledger.iter_receipts()), [])
+            receipts = list(self.ledger.iter_receipts())
+            self.assertEqual([receipt["decision"] for receipt in receipts], ["approve"])
+            self.assertIsNone(state.decision)
             names = [event["name"] for event in self.telemetry.snapshot()["events"]]
             self.assertIn("decision.deadline_missed", names)
         finally:
