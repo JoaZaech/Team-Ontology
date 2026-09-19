@@ -8,7 +8,7 @@ from guardian import GuardPolicy, MerchantHistory, evaluate_guard
 from testing_support import outcomes_by_name
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 DATA = ROOT / "viseca-2026" / "data"
 
 
