@@ -1,0 +1,24 @@
+{
+  "large_intermediate_graph_files_git_ignored": true,
+  "outputs": {
+    "decline_audit/decline_smoke_report.html": [
+      "kg_rootcause/audit/factors.py",
+      "kg_rootcause/audit/tracing.py",
+      "kg_rootcause/audit/runner.py",
+      "kg_rootcause/reporting/declines.py"
+    ],
+    "precomputed-knowledge-graph.html": [
+      "kg_rootcause/frontend_contract/explorer.py",
+      "kg_rootcause/frontend_contract/assets/explorer.js",
+      "kg_rootcause/frontend_contract/assets/explorer.css",
+      "kg_rootcause/frontend_contract/assets/standalone.css",
+      "kg_rootcause/frontend_contract/templates/knowledge_explorer.html",
+      "kg_rootcause/reporting/html.py"
+    ],
+    "tr03359-reason-review.html": [
+      "Same graph renderer; focus authorization TR03359"
+    ]
+  },
+  "regenerate": "python -m kg_rootcause.reports --rebuild",
+  "review_pages_tracked_in_git": true
+}

@@ -72,7 +72,7 @@ used as precomputed truth; evidence is recalculated from source rows.
 
 ## Outputs and audit
 
-`build/` is generated and ignored by Git:
+`build/` is generated. Review pages and decline-audit outputs are tracked; large intermediate files are ignored:
 
 - `data_quality_report.json`, `source_graph.json`, `graph_validation_report.json`
 - `precomputed_evidence.json`, `historical_evidence_index.json`, `ontology.json`
@@ -121,21 +121,79 @@ frontend adapter, production storage, 45/100/1,000-request expansion, and the
 future live-layer adapter remain subsequent work. No graph database or model is
 selected by this baseline.
 
-## Interactive precomputed explorer
-
-The in-conversation explorer now has a reproducible builder:
+## Rebuild the graph and all saved reports
 
 ```sh
-.venv/bin/python -m kg_rootcause.frontend_contract.explorer --output build/precomputed-explorer.html
+.venv/bin/python -m kg_rootcause.reports --rebuild
 ```
 
-`frontend_contract/explorer.py` assembles the data;
-`frontend_contract/knowledge_explorer.html` contains the visual layout and
-interactions. The generated file is an inline visualization fragment, distinct
-from the standalone `build/evidence_viewer.html` simulation viewer.
+This single command validates source data, builds the graph and baseline,
+runs the historical decline audit, and renders self-contained browser pages.
+It requires no Codex installation, plugin files, network access, or temporary
+scripts. Omit `--rebuild` to reuse existing graph outputs; the audit verifies
+that they still match the source dataset.
 
-Select a relationship to see its declined authorizations, recorded purchase
-description, amount, timestamp, merchant, channel and card status. Historical
-records have no per-event decline-reason field. The explorer marks the reason
-as unavailable and shows exclusively prior evidence as context, not causation.
-The five SCEN0001 simulated declines appear separately with actual failed checks.
+Open `build/index.html` for all report links:
+
+- `build/precomputed-knowledge-graph.html`: all-card graph explorer.
+- `build/tr03359-reason-review.html`: same explorer focused on TR03359.
+- `build/decline_audit/decline_smoke_report.html`: all historical decline traces.
+- `build/decline_audit/decline_case_traces.json`: machine-readable case evidence.
+- `build/decline_audit/decline_case_index.csv`: compact case index.
+- `build/README.md` and `build/report_manifest.json`: output-to-source mapping.
+
+The browser-ready review pages, report index, manifest, and decline-audit outputs
+are tracked in Git so teammates can open them after cloning. Large graph JSON
+intermediates, latency outputs, and the virtual environment remain ignored.
+Edit source code and templates, regenerate, then commit the updated pages.
+The graph's JavaScript, CSS, and data are embedded in each generated HTML file;
+there is no separate runtime script to look for inside `build/`.
+
+## Source structure
+
+```text
+kg_rootcause/
+  reports.py                         # One command to generate all reports
+  audit/
+    factors.py                       # Diagnostic names and classifications
+    tracing.py                       # Pure timestamp-correct case analysis
+    runner.py                        # Graph/aggregate checks and cohort counts
+    declines.py                      # Backwards-compatible audit CLI
+  reporting/
+    declines.py                      # Audit HTML/JSON/CSV/Markdown export
+    html.py                          # Self-contained graph page wrapper
+  frontend_contract/
+    explorer.py                      # Data payload and graph rendering CLI
+    templates/knowledge_explorer.html # Graph page markup, not a runnable page
+    assets/explorer.js               # Draws nodes/edges; click and drill-down logic
+    assets/explorer.css              # Graph-specific styling
+    assets/standalone.css            # Portable page theme and control styles
+```
+
+The explorer uses the same `audit/tracing.py` logic as the decline report.
+First-merchant notes are computed from source records and an exclusive cutoff;
+there is no hard-coded TR03359 explanation in the page. A focused report is
+just a renderer option:
+
+```sh
+.venv/bin/python -m kg_rootcause.frontend_contract.explorer \
+  --authorization TR03359 --output build/tr03359-reason-review.html
+```
+
+The explorer CLI generates standalone HTML by default. Use `--format fragment`
+only for an in-conversation visualization host that supplies theme styles.
+
+## Historical decline smoke test
+
+```sh
+.venv/bin/python -m kg_rootcause.audit.declines
+```
+
+The read-only audit checks every historical decline against source graph
+connections and strictly earlier records. It compares stored aggregates with
+fresh calculations and checks merchant/device/category/country counts, p95,
+and recent attempts independently. The report separates observable rule
+conflicts, behavioral context, and unexplained cases. It includes approved
+purchase comparison counts to avoid treating a common behavior as a proven
+cause. Thresholds are explicit; original issuer reason codes remain unavailable.
+No historical outcomes are changed and no new authorization decisions are made.

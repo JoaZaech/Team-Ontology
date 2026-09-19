@@ -1,3 +1,11 @@
 .venv/
 __pycache__/
-build/
+# Large/rebuildable intermediate outputs stay local.
+build/*
+# Portable review deliverables are shared in Git.
+!build/index.html
+!build/README.md
+!build/report_manifest.json
+!build/precomputed-knowledge-graph.html
+!build/tr03359-reason-review.html
+!build/decline_audit/

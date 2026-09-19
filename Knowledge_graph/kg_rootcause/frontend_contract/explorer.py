@@ -1,16 +1,18 @@
-"""Rebuild the in-conversation historical knowledge explorer from baseline outputs.
+"""Rebuild the offline historical knowledge explorer from baseline outputs.
 
 Run from Knowledge_graph:
   .venv/bin/python -m kg_rootcause.frontend_contract.explorer --output /path/explorer.html
 
-The output is an inline fragment. The template holds layout and interaction;
-Python supplies source-derived aggregates, declined records, and prior evidence.
+Standalone HTML is the default; --format fragment targets in-conversation use.
+Python supplies source-derived data; templates and assets own presentation.
 """
 import argparse
 import json
 from pathlib import Path
 from ..ingestion import load_dataset
 from ..precompute import EvidenceIndex
+from ..audit.tracing import trace
+from ..reporting.html import standalone_document
 
 
 def build_payload(build, data_dir):
@@ -46,18 +48,23 @@ def build_payload(build, data_dir):
             'prior_supporting_ids': context['card_merchant']['supporting_event_ids'],
             'decline_reason': None,
         }
-    # Reviewed case note: preserve uncertainty and the exclusive event-time cutoff.
-    case = declines.get('TR03359')
-    if case:
-        case['context_note'] = (
-            'As of 29 April 2026, 18:35:09 UTC, this was CA0001’s first recorded '
-            'interaction with RailNest (ME0006) in the supplied history. The same '
-            'customer already had three approved RailNest purchases on CA0002: '
-            'TR00205 (15 September 2025), TR00941 (8 November 2025), and TR01093 '
-            '(19 November 2025). Merchant novelty is therefore card-specific. '
-            'This is historical context, not a confirmed decline reason; '
-            'first-time encounters do not automatically cause declines.'
-        )
+    # Derive contextual findings from the same analysis used by the audit report.
+    history = sorted(dataset['tables']['authorization_history'], key=lambda r: r['timestamp'])
+    for aid, case in declines.items():
+        result = trace(dataset['indexes']['authorization_history'][aid], history)
+        if 'first_card_merchant' in result['flags']:
+            other = result['evidence']['other_card_merchant_approvals']
+            case['context_note'] = (
+                f"At {case['timestamp']}, this was {case['card_id']}'s first recorded "
+                f"encounter with {case['merchant_id']} in the supplied history. "
+                f"The customer had {len(other)} earlier approved purchases at this merchant "
+                f"on other cards" + (f" ({', '.join(other)})" if other else '') +
+                '. This is a possible factor, NOT a confirmed decline cause. '
+                'The original issuer reason is unavailable.'
+            )
+            case['reason_short'] = 'Possible factor: new merchant'
+        else:
+            case['reason_short'] = 'Reason not supplied'
     simulated = []
     for result in json.loads((build / 'simulation_results.json').read_text()):
         if result['KG_Rootcause']['decision'] != 'decline':
@@ -67,15 +74,21 @@ def build_payload(build, data_dir):
     return {'cards': cards, 'merchants': {mid: m['merchant_name'] for mid, m in types['Merchant'].items()}, 'aggregates': {k: [[r[f] for f in fields] for r in rows] for k, rows in aggregates['aggregates'].items()}, 'declines': declines, 'simulated': simulated}
 
 
-def render_explorer(build, data_dir, output):
+def render_explorer(build, data_dir, output, *, standalone=False, authorization_id=None):
     payload = build_payload(build, data_dir)
-    template = Path(__file__).with_name('knowledge_explorer.html').read_text()
+    if authorization_id is not None and authorization_id not in payload['declines']:
+        raise ValueError(f'Unknown historical decline: {authorization_id}')
+    payload['focus_authorization_id'] = authorization_id
+    frontend = Path(__file__).parent
+    template = (frontend / 'templates/knowledge_explorer.html').read_text()
+    template = template.replace('__EXPLORER_CSS__', (frontend / 'assets/explorer.css').read_text())
+    template = template.replace('__EXPLORER_JS__', (frontend / 'assets/explorer.js').read_text())
     serialized = json.dumps(payload, separators=(',', ':')).replace('<', '\\u003c').replace('>', '\\u003e').replace('&', '\\u0026')
     fragment = template.replace('__KG_DATA__', serialized)
     if len(fragment.encode()) >= 1_000_000:
         raise ValueError('Explorer exceeds inline size limit')
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(fragment)
+    output.write_text(standalone_document(fragment) if standalone else fragment)
     return payload
 
 
@@ -84,9 +97,11 @@ def main():
     kg = Path(__file__).resolve().parents[2]
     parser.add_argument('--build', type=Path, default=kg / 'build')
     parser.add_argument('--data', type=Path, default=kg.parent / 'viseca-2026/data')
-    parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--output', type=Path, default=kg / 'build/precomputed-knowledge-graph.html')
+    parser.add_argument('--format', choices=['standalone', 'fragment'], default='standalone')
+    parser.add_argument('--authorization', help='Open directly on this historical decline, e.g. TR03359')
     args = parser.parse_args()
-    payload = render_explorer(args.build, args.data, args.output)
+    payload = render_explorer(args.build, args.data, args.output, standalone=args.format == 'standalone', authorization_id=args.authorization)
     print(f"Built explorer with {len(payload['declines'])} historical declines and {len(payload['simulated'])} simulated declines: {args.output}")
 
 if __name__ == '__main__':

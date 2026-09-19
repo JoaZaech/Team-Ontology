@@ -1,43 +1,3 @@
-<div id="precomputed-kg-explorer">
-<style>
-#precomputed-kg-explorer .kg-chain{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:16px 0;color:var(--muted-foreground)}
-#precomputed-kg-explorer .kg-graph{width:100%;display:block}
-#precomputed-kg-explorer .kg-graph text{fill:var(--foreground);font-size:12px}
-#precomputed-kg-explorer .kg-detail{margin-top:16px}
-#precomputed-kg-explorer .kg-events{overflow-wrap:anywhere;margin-top:8px}
-#precomputed-kg-explorer .kg-note{margin-top:8px}
-</style>
-<h2>Precomputed knowledge graph</h2>
-<div class="text-small text-muted">Historical evidence · September 2025–July 2026 · 41 cards · 4,701 authorizations</div>
-<div class="viz-controls">
-<label class="form-label">Card<select class="form-select" data-card></select></label>
-<label class="form-label">Relationship<select class="form-select" data-dimension>
-<option value="card_merchant">Card → merchant</option><option value="card_device">Card → device</option><option value="card_category">Card → category</option><option value="card_country">Card → country</option><option value="customer_device">Customer → device</option><option value="card_amount">Card → amount profile</option><option value="initiator_activity">Card → initiator activity</option><option value="time_of_day">Card → hour of day</option>
-</select></label>
-</div>
-<div class="kg-chain" data-chain></div>
-<p data-context-note hidden></p>
-<svg class="kg-graph" data-graph role="img" aria-label="Precomputed relationships for the selected card"></svg>
-<div class="text-small text-muted kg-note" data-count></div>
-<label class="form-label">Inspect relationship<select class="form-select" data-relationship></select></label>
-<div class="kg-detail" aria-live="polite">
-<h3 data-title></h3>
-<div class="table-responsive"><table class="table table-sm"><tbody data-metrics></tbody></table></div>
-<details><summary data-source-label></summary><div class="text-small kg-events" data-events></div></details>
-<hr>
-<h3>Declined transactions</h3>
-<div class="text-small text-muted" data-decline-count></div>
-<label class="form-label" data-decline-control>Inspect declined record<select class="form-select" data-decline></select></label>
-<div data-decline-detail>
-<div class="kg-chain" data-decline-chain></div>
-
-<div class="table-responsive"><table class="table table-sm"><tbody data-decline-facts></tbody></table></div>
-<details><summary>Evidence available before this transaction</summary><div class="table-responsive"><table class="table table-sm"><tbody data-prior-facts></tbody></table></div><div class="text-small kg-events" data-prior-ids></div></details>
-</div>
-<details class="kg-detail" data-simulation><summary>Simulation declines — recorded rule failures</summary><div class="text-small text-muted">SCEN0001 · Separate from historical outcomes · Simulation policy</div><div class="table-responsive"><table class="table table-sm"><thead><tr><th>Request</th><th>Order</th><th>Failed checks</th></tr></thead><tbody data-simulation-rows></tbody></table></div></details>
-</div>
-<script type="application/json" data-payload>__KG_DATA__</script>
-<script>
 (()=>{
 const root=document.getElementById('precomputed-kg-explorer'), get=s=>root.querySelector(s), data=JSON.parse(get('[data-payload]').textContent), cardSelect=get('[data-card]'), dimSelect=get('[data-dimension]'), relSelect=get('[data-relationship]'), graph=get('[data-graph]');
 const dimensions={card_merchant:['merchant_id','USED_MERCHANT'],card_device:['customer_device_id','USED_DEVICE'],card_category:['merchant_category','PURCHASED_CATEGORY'],card_country:['merchant_country','USED_COUNTRY'],customer_device:['customer_device_id','CUSTOMER_USED_DEVICE'],card_amount:['card_id','AMOUNT_PROFILE'],initiator_activity:['initiator_type','INITIATOR_ACTIVITY'],time_of_day:['hour_utc','ACTIVITY_AT_HOUR']};
@@ -46,7 +6,7 @@ const money=v=>v===null?'No approved purchases':new Intl.NumberFormat('en-CH',{s
 function option(el,value,label){const o=document.createElement('option');o.value=value;o.textContent=label;el.append(o)}
 function label(r){const k=dimSelect.value,v=r[0][dimensions[k][0]];if(k==='card_merchant')return `${data.merchants[v]} · ${v}`;if(k==='time_of_day')return `${String(v).padStart(2,'0')}:00–${String(v).padStart(2,'0')}:59 UTC`;if(k==='card_amount')return 'Historical amount profile';return String(v).replaceAll('_',' ')}
 Object.entries(data.cards).forEach(([id,c])=>option(cardSelect,id,`${id} · ${c[2]} · ${c[3]}`));
-function update(){const card=cardSelect.value,c=data.cards[card],dim=dimSelect.value;rows=data.aggregates[dim].filter(r=>dim==='customer_device'?r[0].customer_id===c[1]:r[0].card_id===card).sort((a,b)=>b[1]-a[1]||label(a).localeCompare(label(b)));selected=0;expanded=false;if(initialView){const target=rows.findIndex(r=>r[0].merchant_id==='ME0006');if(target>=0){selected=target;expanded=true;}initialView=false;}relSelect.replaceChildren();rows.forEach((r,i)=>option(relSelect,i,`${label(r)} — ${r[1]} approved purchases`));relSelect.value=String(selected);get('[data-chain]').textContent=`${c[2]} (${c[1]}) → ${c[0]} → ${card}`;show()}
+function update(){const card=cardSelect.value,c=data.cards[card],dim=dimSelect.value;rows=data.aggregates[dim].filter(r=>dim==='customer_device'?r[0].customer_id===c[1]:r[0].card_id===card).sort((a,b)=>b[1]-a[1]||label(a).localeCompare(label(b)));selected=0;expanded=false;if(initialView){const target=rows.findIndex(r=>data.focus_authorization_id&&r[9].includes(data.focus_authorization_id));if(target>=0){selected=target;expanded=true;}initialView=false;}relSelect.replaceChildren();rows.forEach((r,i)=>option(relSelect,i,`${label(r)} — ${r[1]} approved purchases`));relSelect.value=String(selected);get('[data-chain]').textContent=`${c[2]} (${c[1]}) → ${c[0]} → ${card}`;show()}
 function show(){const r=rows[selected];if(!r)return;get('[data-title]').textContent=label(r);const body=get('[data-metrics]');body.replaceChildren();const metrics=[['Approved purchases',r[1]],['Declined authorizations',r[2]],['Approved purchase total',money(r[3])],['Net approved total, including refunds / cash',money(r[4])],['Purchase amount median / p95',`${money(r[5])} / ${money(r[6])}`],['First / last approved purchase',`${r[7]?r[7].slice(0,10):'None'} / ${r[8]?r[8].slice(0,10):'None'}`]];for(const [k,v]of metrics){const tr=document.createElement('tr'),th=document.createElement('th'),td=document.createElement('td');th.scope='row';th.textContent=k;td.textContent=v;td.className='text-end tabular-nums';tr.append(th,td);body.append(tr)}get('[data-source-label]').textContent=`${r[9].length} supporting authorization records`;get('[data-events]').textContent=r[9].join(' · ');showDeclines();draw()}
 function node(tag,attrs,text){const el=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const[k,v]of Object.entries(attrs))el.setAttribute(k,v);if(text!==undefined)el.textContent=text;return el}
 function draw(){
@@ -69,7 +29,7 @@ function draw(){
   l.ids.forEach((id,j)=>{const y=wide?l.start+38+j*86:l.y+86+j*86,x=wide?evtX:width/2;
    if(wide)edge(relX+98,l.y,x-94,y,'var(--red)');else graph.append(node('path',{d:`M${relX} ${l.y+24} L${relX-112} ${l.y+24} L${relX-112} ${y} L${x-94} ${y}`,fill:'none',stroke:'var(--red)','stroke-width':1,'marker-end':'url(#kg-evidence-arrow)'}));
    box(x,y,188,id,`${money(data.declines[id].billing_cents)} · Declined`,'var(--red)',intensity(1),()=>{get('[data-decline]').value=id;showDecline();draw()}, {'data-declined-event':id});
-   const reasonText=node('text',{x,y:y+40,'text-anchor':'middle'},data.declines[id].context_note?'Possible factor: new merchant':(data.declines[id].decline_reason||'Reason not supplied'));if(data.declines[id].context_note){reasonText.style.fill='var(--red)';reasonText.style.fontWeight='500';}graph.append(reasonText);
+   const reasonText=node('text',{x,y:y+40,'text-anchor':'middle'},data.declines[id].reason_short||'Reason not supplied');if(data.declines[id].context_note){reasonText.style.fill='var(--red)';reasonText.style.fontWeight='500';}graph.append(reasonText);
 
   });
  }
@@ -82,7 +42,7 @@ function showDeclines(){
  related.forEach(id=>{const d=data.declines[id];option(select,id,`${id} · ${d.timestamp.slice(0,10)} · ${money(d.billing_cents)}`)});
  get('[data-decline-count]').textContent=related.length?`${related.length} historical decline${related.length===1?'':'s'} in this relationship`:'No historical declines in this relationship';
  get('[data-decline-control]').hidden=!related.length;get('[data-decline-detail]').hidden=!related.length;
- if(related.length)showDecline();else{get('[data-context-note]').hidden=true;get('[data-context-note]').textContent='';}
+ if(related.length){if(related.includes(data.focus_authorization_id)){select.value=data.focus_authorization_id;}showDecline();}else{get('[data-context-note]').hidden=true;get('[data-context-note]').textContent='';}
  const simulated=data.simulated.filter(s=>s.card_id===cardSelect.value),body=get('[data-simulation-rows]');body.replaceChildren();get('[data-simulation]').hidden=!simulated.length;
  for(const s of simulated){const tr=document.createElement('tr');let reasons=s.checks.map(c=>c.rule==='maximum_order'?`Order ${money(c.observed)} exceeds ${money(c.expected)}`:c.rule==='rolling_budget'?`Seven-day total with order ${money(c.observed)} exceeds ${money(c.expected)}`:c.rule==='item_category'?`Basket categories ${c.observed.join(', ')}; allowed ${c.expected.join(', ')}`:`${c.rule}: ${JSON.stringify(c.observed)}; expected ${JSON.stringify(c.expected)}`);for(const value of [s.id,money(s.amount),reasons.join(' · ')]){const td=document.createElement('td');td.textContent=value;tr.append(td)}body.append(tr)}
 }
@@ -91,7 +51,7 @@ function showDecline(){
  const note=get('[data-context-note]');note.hidden=!d.context_note;note.textContent=d.context_note?'Timestamp review — '+d.context_note:'';
  get('[data-decline-chain]').textContent=`${d.card_id} → ${d.merchant_id} → ${id} → DECLINED`;
  fillFacts('[data-decline-facts]',[
- [d.context_note?'Decline reason / contextual finding':'Recorded decline reason',d.context_note?'POSSIBLE FACTOR: First recorded RailNest purchase on CA0001 at 29 April 2026, 18:35:09 UTC. The customer had three earlier approved RailNest purchases on CA0002. This is NOT a confirmed decline cause; the original reason was not supplied.':'Not supplied in the historical dataset'],
+ [d.context_note?'Decline reason / contextual finding':'Recorded decline reason',d.context_note?d.context_note:'Not supplied in the historical dataset'],
  ['What was attempted',d.description],['Transaction type',d.transaction_type],
  ['Merchant',`${data.merchants[d.merchant_id]} (${d.merchant_id})`],
  ['Amount',`${(d.amount_cents/100).toFixed(2)} ${d.currency} · billed ${money(d.billing_cents)}`],
@@ -115,8 +75,6 @@ function showDecline(){
 }
 get('[data-decline]').addEventListener('change',()=>{showDecline();draw()});
 
-cardSelect.value='CA0001';dimSelect.value='card_merchant';
+if(data.focus_authorization_id){cardSelect.value=data.declines[data.focus_authorization_id].card_id;}dimSelect.value='card_merchant';
 cardSelect.addEventListener('change',update);dimSelect.addEventListener('change',update);relSelect.addEventListener('change',()=>{selected=Number(relSelect.value);expanded=true;show()});new ResizeObserver(()=>{if(rows.length)draw()}).observe(graph.parentElement);update();
 })();
-</script>
-</div>

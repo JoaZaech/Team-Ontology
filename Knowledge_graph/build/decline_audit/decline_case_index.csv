@@ -1,0 +1,260 @@
+authorization_id,timestamp,card_id,merchant_id,merchant_name,transaction_type,amount_cents,assessment,flags,prior_card_merchant_count,other_card_merchant_approval_count,prior_approved_purchase_count,prior_purchase_p95_cents,account_month_with_attempt_cents,monthly_limit_cents
+TR00001,2025-09-01T04:03:44Z,CA0018,ME0052,PlainLedger,purchase,1000,behavioral_context_only,first_card_merchant; no_approved_card_merchant; first_customer_merchant; first_card_device; first_card_category; first_card_country,0,0,0,,1000,450000
+TR00005,2025-09-01T10:23:57Z,CA0003,ME0041,IsarNest Hotel,purchase,28427,behavioral_context_only,first_card_merchant; no_approved_card_merchant; first_customer_merchant; first_card_device; first_card_category; first_card_country; foreign_merchant,0,0,0,,28427,850000
+TR00008,2025-09-01T11:05:33Z,CA0027,ME0057,CashPoint Central,cash_withdrawal,15000,behavioral_context_only,first_card_merchant; no_approved_card_merchant; first_customer_merchant; first_card_category,0,0,1,3525,18525,850000
+TR00020,2025-09-02T08:42:29Z,CA0015,ME0015,MealWing,purchase,3490,behavioral_context_only,first_card_merchant; no_approved_card_merchant; first_customer_merchant; first_card_device; first_card_category; first_card_country,0,0,0,,3490,400000
+TR00038,2025-09-03T04:31:17Z,CA0009,ME0018,NorthTone Digital,purchase,1124,observable_rule_conflict,international_disabled; first_card_merchant; no_approved_card_merchant; first_customer_merchant; first_card_device; first_card_category; first_card_country; foreign_merchant,0,0,0,,1442,450000
+TR00040,2025-09-03T10:01:34Z,CA0006,ME0030,AlpenWerk Sport,purchase,15000,behavioral_context_only,first_card_merchant; no_approved_card_merchant; first_customer_merchant; first_card_device; first_card_category; first_card_country; foreign_merchant,0,0,0,,15000,280000
+TR00043,2025-09-03T16:49:53Z,CA0020,ME0022,PixelHarbor,purchase,17730,behavioral_context_only,first_card_merchant; no_approved_card_merchant; first_customer_merchant; first_card_device; first_card_category,0,0,1,4690,22420,750000
+TR00057,2025-09-04T19:52:42Z,CA0020,ME0018,NorthTone Digital,purchase,990,behavioral_context_only,first_card_merchant; no_approved_card_merchant; first_customer_merchant; first_card_category; first_card_country; foreign_merchant,0,0,3,17730,30510,750000
+TR00058,2025-09-05T02:29:25Z,CA0007,ME0051,WorkCanvas,purchase,890,observable_rule_conflict,international_disabled; first_card_merchant; no_approved_card_merchant; first_customer_merchant; first_card_category; first_card_country; foreign_merchant,0,0,2,7659,9744,400000
+TR00065,2025-09-05T17:59:25Z,CA0020,ME0022,PixelHarbor,purchase,22995,unexplained_by_checked_factors,,2,0,3,17730,52515,750000
+TR00075,2025-09-06T10:45:29Z,CA0032,ME0056,RoomKind,purchase,5254,behavioral_context_only,first_card_merchant; no_approved_card_merchant; first_customer_merchant; first_card_device; first_card_category,0,0,1,10495,15749,400000
+TR00092,2025-09-07T17:43:50Z,CA0038,ME0021,London Leaf Books,purchase,2000,observable_rule_conflict,international_disabled; first_card_merchant; no_approved_card_merchant; first_customer_merchant; first_card_category; first_card_country; foreign_merchant,0,0,1,2490,4490,550000
+TR00094,2025-09-07T17:46:48Z,CA0038,ME0021,London Leaf Books,purchase,1700,observable_rule_conflict,international_disabled; no_approved_card_merchant; recent_decline_same_merchant; foreign_merchant,1,0,1,2490,4190,550000
+TR00103,2025-09-08T12:50:14Z,CA0003,ME0045,EuroTrail Tickets,purchase,108035,unexplained_by_checked_factors,foreign_merchant,1,1,4,31200,171451,850000
+TR00105,2025-09-08T15:27:02Z,CA0002,ME0008,LakeLine Mobility,purchase,3324,behavioral_context_only,first_card_merchant; no_approved_card_merchant; first_customer_merchant; first_card_category,0,0,4,7895,26498,450000
+TR00106,2025-09-08T15:29:44Z,CA0002,ME0008,LakeLine Mobility,purchase,2825,behavioral_context_only,no_approved_card_merchant; recent_decline_same_merchant,1,0,4,7895,25999,450000
+TR00123,2025-09-09T18:34:06Z,CA0002,ME0032,Tool and Timber,purchase,10600,behavioral_context_only,first_card_merchant; no_approved_card_merchant; first_customer_merchant; first_card_category,0,0,4,7895,33774,450000
+TR00130,2025-09-10T09:29:48Z,CA0020,ME0024,HarborByte,purchase,35300,behavioral_context_only,first_card_merchant; no_approved_card_merchant; first_customer_merchant; first_card_country; foreign_merchant,0,0,7,22995,111250,750000
+TR00142,2025-09-11T02:22:10Z,CA0027,ME0018,NorthTone Digital,purchase,1486,behavioral_context_only,first_card_merchant; no_approved_card_merchant; first_customer_merchant; first_card_device; first_card_category; first_card_country; foreign_merchant,0,0,4,6649,19460,850000
+TR00158,2025-09-12T03:15:25Z,CA0022,ME0051,WorkCanvas,purchase,1818,observable_rule_conflict,international_disabled; first_card_merchant; no_approved_card_merchant; first_customer_merchant; first_card_country; foreign_merchant,0,0,7,11695,37406,550000
+TR00172,2025-09-12T19:42:39Z,CA0003,ME0041,IsarNest Hotel,purchase,40950,unexplained_by_checked_factors,foreign_merchant,2,0,4,31200,104366,850000
+TR00228,2025-09-17T02:33:22Z,CA0026,ME0018,NorthTone Digital,purchase,2200,observable_rule_conflict,international_disabled; first_card_merchant; no_approved_card_merchant; first_customer_merchant; first_card_category; first_card_country; foreign_merchant,0,0,8,11190,71003,450000
+TR00259,2025-09-18T21:00:10Z,CA0003,ME0052,PlainLedger,purchase,8100,behavioral_context_only,first_card_merchant; no_approved_card_merchant; first_card_category; first_card_country,0,1,7,54090,202496,850000
+TR00267,2025-09-20T02:35:12Z,CA0034,ME0051,WorkCanvas,purchase,1784,behavioral_context_only,first_card_merchant; no_approved_card_merchant; first_customer_merchant; first_card_category; first_card_country; foreign_merchant,0,0,12,12850,94997,450000
+TR00268,2025-09-20T05:02:47Z,CA0033,ME0051,WorkCanvas,purchase,1390,observable_rule_conflict,international_disabled; first_card_merchant; no_approved_card_merchant; first_customer_merchant; first_card_category; first_card_country; foreign_merchant,0,0,5,6200,37618,320000
+TR00269,2025-09-20T05:06:39Z,CA0033,ME0051,WorkCanvas,purchase,1390,observable_rule_conflict,international_disabled; no_approved_card_merchant; recent_decline_same_merchant; foreign_merchant,1,0,5,6200,37618,320000
+TR00279,2025-09-20T16:02:03Z,CA0017,ME0026,RainThread,purchase,22729,behavioral_context_only,first_card_merchant; no_approved_card_merchant; first_customer_merchant,0,0,8,8645,57282,360000
+TR00320,2025-09-24T21:24:16Z,CA0040,ME0013,Noon Spoon,purchase,7172,unexplained_by_checked_factors,,1,0,9,8350,81612,850000
+TR00364,2025-09-27T18:31:30Z,CA0025,ME0055,Parcel and Pine,purchase,2190,unexplained_by_checked_factors,,1,1,9,5100,76285,450000
+TR00367,2025-09-27T21:33:55Z,CA0040,ME0027,Milano Weave,purchase,7589,behavioral_context_only,first_card_merchant; no_approved_card_merchant; first_customer_merchant; first_card_country; foreign_merchant,0,0,12,19700,116574,850000
+TR00392,2025-10-01T02:37:05Z,CA0005,ME0052,PlainLedger,purchase,2295,unexplained_by_checked_factors,,2,0,10,11490,2295,550000
+TR00413,2025-10-02T03:10:16Z,CA0035,ME0018,NorthTone Digital,purchase,1707,unexplained_by_checked_factors,foreign_merchant,1,0,4,13600,1707,500000
+TR00424,2025-10-03T05:28:04Z,CA0009,ME0018,NorthTone Digital,purchase,1124,observable_rule_conflict,international_disabled; no_approved_card_merchant; foreign_merchant,1,3,1,8019,4432,450000
+TR00425,2025-10-03T05:30:28Z,CA0009,ME0018,NorthTone Digital,purchase,955,observable_rule_conflict,international_disabled; no_approved_card_merchant; recent_decline_same_merchant; foreign_merchant,2,3,1,8019,4263,450000
+TR00435,2025-10-03T20:07:28Z,CA0023,ME0019,CloudShelf Books,purchase,2232,behavioral_context_only,first_card_merchant; no_approved_card_merchant; first_card_category,0,1,8,9370,2232,400000
+TR00458,2025-10-05T02:43:11Z,CA0007,ME0051,WorkCanvas,purchase,890,observable_rule_conflict,international_disabled; no_approved_card_merchant; unusual_hour; foreign_merchant,1,0,32,8413,15281,400000
+TR00488,2025-10-07T16:03:34Z,CA0011,ME0017,StoryArc Media,purchase,2300,unexplained_by_checked_factors,,2,0,9,12877,14195,500000
+TR00504,2025-10-08T20:29:53Z,CA0023,ME0006,RailNest,purchase,4425,behavioral_context_only,first_card_merchant; no_approved_card_merchant; first_customer_merchant; first_card_category,0,0,13,10050,38137,400000
+TR00511,2025-10-09T11:01:12Z,CA0029,ME0027,Milano Weave,purchase,11879,unexplained_by_checked_factors,foreign_merchant,1,0,12,23210,59516,950000
+TR00526,2025-10-10T13:03:37Z,CA0034,ME0012,Basil and Board,purchase,3182,behavioral_context_only,first_card_merchant; no_approved_card_merchant; first_customer_merchant,0,0,19,12850,30563,450000
+TR00531,2025-10-11T02:03:13Z,CA0027,ME0018,NorthTone Digital,purchase,1486,unexplained_by_checked_factors,foreign_merchant,2,1,9,9890,40176,850000
+TR00550,2025-10-12T06:58:29Z,CA0022,ME0051,WorkCanvas,purchase,1818,observable_rule_conflict,international_disabled; no_approved_card_merchant; unusual_hour; foreign_merchant,1,0,23,11695,53474,550000
+TR00566,2025-10-13T14:20:14Z,CA0038,ME0018,NorthTone Digital,purchase,2400,observable_rule_conflict,international_disabled; first_card_merchant; no_approved_card_merchant; first_customer_merchant; first_card_category; foreign_merchant,0,0,8,5850,15935,550000
+TR00569,2025-10-13T15:50:28Z,CA0021,ME0041,IsarNest Hotel,purchase,36490,behavioral_context_only,first_card_merchant; no_approved_card_merchant; first_card_device; first_card_category; first_card_country; foreign_merchant,0,1,7,13646,56945,850000
+TR00577,2025-10-14T07:42:16Z,CA0018,ME0001,Alpine Basket,purchase,4390,behavioral_context_only,first_card_merchant; no_approved_card_merchant; first_customer_merchant,0,0,19,7957,13781,450000
+TR00589,2025-10-15T07:43:35Z,CA0005,ME0009,RoadPine Energy,purchase,16690,behavioral_context_only,first_card_merchant; no_approved_card_merchant; first_card_category,0,1,17,21354,76519,550000
+TR00596,2025-10-15T14:41:33Z,CA0007,ME0003,Lakeview Grocer,purchase,113672,observable_rule_conflict,transaction_limit; amount_above_p95,3,0,40,7700,152365,400000
+TR00611,2025-10-16T13:22:53Z,CA0016,ME0018,NorthTone Digital,purchase,1195,unexplained_by_checked_factors,foreign_merchant,1,0,4,3100,24399,400000
+TR00620,2025-10-16T17:06:07Z,CA0001,ME0001,Alpine Basket,purchase,3651,unexplained_by_checked_factors,,2,2,15,12900,58892,450000
+TR00625,2025-10-17T06:21:38Z,CA0026,ME0018,NorthTone Digital,purchase,2200,observable_rule_conflict,international_disabled; no_approved_card_merchant; foreign_merchant,1,0,9,11190,17034,450000
+TR00626,2025-10-17T06:24:23Z,CA0026,ME0018,NorthTone Digital,purchase,1869,observable_rule_conflict,international_disabled; no_approved_card_merchant; recent_decline_same_merchant; foreign_merchant,2,0,9,11190,16703,450000
+TR00627,2025-10-17T06:28:32Z,CA0026,ME0018,NorthTone Digital,purchase,1869,observable_rule_conflict,international_disabled; no_approved_card_merchant; recent_decline_same_merchant; foreign_merchant,3,0,9,11190,16703,450000
+TR00630,2025-10-17T09:47:20Z,CA0021,ME0040,SummitStay,purchase,24100,behavioral_context_only,first_card_merchant; no_approved_card_merchant,0,1,10,13646,60297,850000
+TR00666,2025-10-20T02:54:13Z,CA0033,ME0051,WorkCanvas,purchase,1390,observable_rule_conflict,international_disabled; no_approved_card_merchant; foreign_merchant,2,0,10,8650,24924,320000
+TR00706,2025-10-22T15:51:47Z,CA0029,ME0058,Cobalt Coatworks,purchase,11669,behavioral_context_only,first_card_merchant; no_approved_card_merchant; first_customer_merchant,0,0,14,23210,73246,950000
+TR00725,2025-10-23T18:31:33Z,CA0033,ME0056,RoomKind,purchase,3900,behavioral_context_only,first_card_merchant; no_approved_card_merchant; first_card_category,0,1,11,9000,36434,320000
+TR00746,2025-10-24T19:08:57Z,CA0004,ME0017,StoryArc Media,purchase,1290,behavioral_context_only,first_card_merchant; no_approved_card_merchant,0,1,14,26815,88162,950000
+TR00759,2025-10-25T17:09:29Z,CA0031,ME0022,PixelHarbor,purchase,20900,behavioral_context_only,first_card_merchant; no_approved_card_merchant; first_card_category,0,2,17,22358,142296,650000
+TR00848,2025-11-03T04:26:26Z,CA0009,ME0018,NorthTone Digital,purchase,1124,observable_rule_conflict,international_disabled; no_approved_card_merchant; first_card_device; foreign_merchant,3,5,7,14900,16342,450000
+TR00849,2025-11-03T04:28:41Z,CA0009,ME0018,NorthTone Digital,purchase,1124,observable_rule_conflict,international_disabled; no_approved_card_merchant; recent_decline_same_merchant; foreign_merchant,4,5,7,14900,16342,450000
+TR00850,2025-11-03T04:33:30Z,CA0009,ME0018,NorthTone Digital,purchase,1124,observable_rule_conflict,international_disabled; no_approved_card_merchant; recent_decline_same_merchant; foreign_merchant,5,5,7,14900,16342,450000
+TR00853,2025-11-03T13:21:28Z,CA0029,ME0013,Noon Spoon,purchase,3490,unexplained_by_checked_factors,,1,1,18,23210,9150,950000
+TR00875,2025-11-05T05:14:30Z,CA0007,ME0051,WorkCanvas,purchase,890,observable_rule_conflict,international_disabled; no_approved_card_merchant; foreign_merchant,2,0,51,8413,7294,400000
+TR00876,2025-11-05T05:18:54Z,CA0007,ME0051,WorkCanvas,purchase,756,observable_rule_conflict,international_disabled; no_approved_card_merchant; recent_decline_same_merchant; foreign_merchant,3,0,51,8413,7160,400000
+TR00965,2025-11-10T09:25:34Z,CA0018,ME0019,CloudShelf Books,purchase,2695,behavioral_context_only,burst_10m,2,0,37,6850,32444,450000
+TR00967,2025-11-10T10:31:11Z,CA0010,ME0020,BrightPage Learning,purchase,2570,unexplained_by_checked_factors,,2,2,16,10500,11427,360000
+TR00987,2025-11-12T04:17:12Z,CA0022,ME0051,WorkCanvas,purchase,1818,observable_rule_conflict,international_disabled; no_approved_card_merchant; unusual_hour; foreign_merchant,2,0,40,10703,11842,550000
+TR01028,2025-11-14T17:50:20Z,CA0016,ME0034,Little Lantern,purchase,2650,unexplained_by_checked_factors,,2,4,14,10450,60144,400000
+TR01038,2025-11-15T08:14:37Z,CA0033,ME0018,NorthTone Digital,purchase,650,observable_rule_conflict,international_disabled; first_card_merchant; no_approved_card_merchant; first_customer_merchant; first_card_country; foreign_merchant,0,0,20,8650,29739,320000
+TR01039,2025-11-15T08:17:01Z,CA0033,ME0017,StoryArc Media,purchase,1994,behavioral_context_only,burst_10m,3,2,20,8650,31083,320000
+TR01055,2025-11-16T09:57:19Z,CA0021,ME0051,WorkCanvas,purchase,2050,behavioral_context_only,burst_10m; foreign_merchant,3,9,20,22690,21361,850000
+TR01060,2025-11-17T02:41:46Z,CA0026,ME0018,NorthTone Digital,purchase,2200,observable_rule_conflict,international_disabled; no_approved_card_merchant; unusual_hour; foreign_merchant,4,0,21,11190,74562,450000
+TR01080,2025-11-19T07:35:49Z,CA0038,ME0024,HarborByte,purchase,10450,observable_rule_conflict,international_disabled; first_card_merchant; no_approved_card_merchant; first_card_category; first_card_country; foreign_merchant,0,5,16,23095,14478,550000
+TR01081,2025-11-19T07:39:29Z,CA0038,ME0024,HarborByte,purchase,10450,observable_rule_conflict,international_disabled; no_approved_card_merchant; recent_decline_same_merchant; foreign_merchant,1,5,16,23095,14478,550000
+TR01084,2025-11-19T10:39:15Z,CA0002,ME0031,HomeMend Market,purchase,8600,behavioral_context_only,first_card_merchant; no_approved_card_merchant; first_customer_merchant,0,0,17,8900,74987,450000
+TR01098,2025-11-20T06:48:51Z,CA0033,ME0051,WorkCanvas,purchase,1390,observable_rule_conflict,international_disabled; no_approved_card_merchant; unusual_hour; foreign_merchant,3,0,20,8650,30479,320000
+TR01099,2025-11-20T06:53:05Z,CA0033,ME0051,WorkCanvas,purchase,1390,observable_rule_conflict,international_disabled; no_approved_card_merchant; recent_decline_same_merchant; unusual_hour; foreign_merchant,4,0,20,8650,30479,320000
+TR01100,2025-11-20T06:57:34Z,CA0033,ME0051,WorkCanvas,purchase,1390,observable_rule_conflict,international_disabled; no_approved_card_merchant; recent_decline_same_merchant; unusual_hour; foreign_merchant,5,0,20,8650,30479,320000
+TR01149,2025-11-22T19:15:49Z,CA0031,ME0047,SilverFrame,purchase,27200,behavioral_context_only,amount_above_p95; foreign_merchant,4,2,25,22358,122128,650000
+TR01169,2025-11-24T15:00:41Z,CA0015,ME0020,BrightPage Learning,purchase,4300,behavioral_context_only,unusual_hour,1,2,30,9225,63794,400000
+TR01227,2025-11-29T07:25:24Z,CA0031,ME0002,Neighbour Pantry,purchase,11000,behavioral_context_only,first_card_merchant; no_approved_card_merchant,0,1,26,22358,117518,650000
+TR01231,2025-11-29T08:49:38Z,CA0008,ME0018,NorthTone Digital,purchase,1400,observable_rule_conflict,international_disabled; first_card_merchant; no_approved_card_merchant; first_card_country; foreign_merchant,0,7,12,1500,25818,450000
+TR01232,2025-11-29T08:56:08Z,CA0008,ME0018,NorthTone Digital,purchase,1189,observable_rule_conflict,international_disabled; no_approved_card_merchant; recent_decline_same_merchant; foreign_merchant,1,7,12,1500,25607,450000
+TR01237,2025-11-29T11:29:29Z,CA0017,ME0038,HealthBridge Pharmacy,purchase,3452,unexplained_by_checked_factors,,1,9,20,10600,22630,360000
+TR01243,2025-11-29T17:12:30Z,CA0004,ME0041,IsarNest Hotel,purchase,22090,unexplained_by_checked_factors,foreign_merchant,2,7,24,26815,139692,950000
+TR01272,2025-12-02T06:52:06Z,CA0007,ME0060,Thames Weave,purchase,6920,observable_rule_conflict,international_disabled; first_card_merchant; no_approved_card_merchant; first_customer_merchant; first_card_country; foreign_merchant,0,0,73,7700,15906,400000
+TR01287,2025-12-03T02:26:20Z,CA0009,ME0018,NorthTone Digital,purchase,1124,observable_rule_conflict,international_disabled; no_approved_card_merchant; foreign_merchant,6,7,11,14900,13532,450000
+TR01321,2025-12-05T05:32:00Z,CA0007,ME0051,WorkCanvas,purchase,890,observable_rule_conflict,international_disabled; no_approved_card_merchant; foreign_merchant,4,0,75,7700,17721,400000
+TR01324,2025-12-05T10:45:12Z,CA0017,ME0001,Alpine Basket,purchase,2090,behavioral_context_only,first_card_device,4,5,23,10600,10290,360000
+TR01351,2025-12-06T18:04:00Z,CA0021,ME0040,SummitStay,purchase,32432,behavioral_context_only,no_approved_card_merchant; amount_above_p95,1,1,23,28937,95632,850000
+TR01356,2025-12-06T18:47:08Z,CA0016,ME0026,RainThread,purchase,184034,observable_rule_conflict,transaction_limit; first_card_merchant; no_approved_card_merchant; first_card_category,0,0,15,10450,184034,400000
+TR01373,2025-12-08T17:21:35Z,CA0009,ME0038,HealthBridge Pharmacy,purchase,4375,behavioral_context_only,first_card_merchant; no_approved_card_merchant; first_customer_merchant,0,0,12,14900,23949,450000
+TR01416,2025-12-12T06:42:48Z,CA0022,ME0051,WorkCanvas,purchase,1818,observable_rule_conflict,international_disabled; no_approved_card_merchant; foreign_merchant,3,0,61,10300,35522,550000
+TR01428,2025-12-12T19:25:19Z,CA0013,ME0032,Tool and Timber,purchase,12563,behavioral_context_only,first_card_merchant; no_approved_card_merchant; unusual_hour,0,2,34,14450,30967,550000
+TR01447,2025-12-13T18:22:24Z,CA0010,ME0006,RailNest,purchase,1431,behavioral_context_only,first_card_merchant; no_approved_card_merchant; unusual_hour,0,1,24,9900,4326,360000
+TR01450,2025-12-13T22:18:45Z,CA0040,ME0012,Basil and Board,purchase,6414,behavioral_context_only,first_card_merchant; no_approved_card_merchant,0,2,31,19700,42610,850000
+TR01459,2025-12-14T18:23:26Z,CA0033,ME0027,Milano Weave,purchase,4638,observable_rule_conflict,international_disabled; first_card_merchant; no_approved_card_merchant; first_customer_merchant; first_card_country; foreign_merchant,0,0,26,8650,20506,320000
+TR01461,2025-12-14T18:24:29Z,CA0033,ME0027,Milano Weave,purchase,3942,observable_rule_conflict,international_disabled; no_approved_card_merchant; burst_10m; recent_decline_same_merchant; foreign_merchant,1,0,27,8650,26110,320000
+TR01463,2025-12-14T18:31:10Z,CA0033,ME0027,Milano Weave,purchase,3351,observable_rule_conflict,international_disabled; no_approved_card_merchant; burst_10m; recent_decline_same_merchant; foreign_merchant,2,0,28,9000,36114,320000
+TR01465,2025-12-14T18:37:40Z,CA0033,ME0027,Milano Weave,purchase,3351,observable_rule_conflict,international_disabled; no_approved_card_merchant; recent_decline_same_merchant; foreign_merchant,3,0,28,9000,36114,320000
+TR01495,2025-12-17T04:20:15Z,CA0026,ME0018,NorthTone Digital,purchase,2200,observable_rule_conflict,international_disabled; no_approved_card_merchant; unusual_hour; foreign_merchant,5,0,29,11390,32186,450000
+TR01496,2025-12-17T04:25:17Z,CA0026,ME0018,NorthTone Digital,purchase,2200,observable_rule_conflict,international_disabled; no_approved_card_merchant; recent_decline_same_merchant; unusual_hour; foreign_merchant,6,0,29,11390,32186,450000
+TR01510,2025-12-18T10:30:41Z,CA0013,ME0038,HealthBridge Pharmacy,purchase,9495,unexplained_by_checked_factors,,1,1,34,14450,27899,550000
+TR01536,2025-12-20T02:58:02Z,CA0033,ME0051,WorkCanvas,purchase,1390,observable_rule_conflict,international_disabled; no_approved_card_merchant; unusual_hour; foreign_merchant,6,0,30,9000,40703,320000
+TR01540,2025-12-20T11:33:54Z,CA0006,ME0038,HealthBridge Pharmacy,purchase,4895,behavioral_context_only,unusual_hour,2,1,38,20293,43597,280000
+TR01551,2025-12-20T19:49:25Z,CA0028,ME0006,RailNest,purchase,2750,behavioral_context_only,first_card_merchant; no_approved_card_merchant; unusual_hour,0,3,24,9000,66611,850000
+TR01568,2025-12-22T12:22:07Z,CA0039,ME0007,MetroHop,purchase,2690,behavioral_context_only,first_card_merchant; no_approved_card_merchant,0,3,49,19450,55938,320000
+TR01573,2025-12-22T21:57:11Z,CA0003,ME0045,EuroTrail Tickets,purchase,32890,behavioral_context_only,unusual_hour; foreign_merchant,4,3,39,54090,160224,850000
+TR01640,2025-12-28T04:15:02Z,CA0029,ME0051,WorkCanvas,purchase,3000,behavioral_context_only,unusual_hour; foreign_merchant,3,0,27,23210,49145,950000
+TR01663,2025-12-30T14:39:23Z,CA0031,ME0047,SilverFrame,purchase,17929,unexplained_by_checked_factors,foreign_merchant,6,2,34,29895,135242,650000
+TR01680,2025-12-31T11:29:32Z,CA0034,ME0007,MetroHop,purchase,1695,behavioral_context_only,burst_10m,2,0,74,11250,142449,450000
+TR01719,2026-01-03T06:51:39Z,CA0009,ME0018,NorthTone Digital,purchase,1124,observable_rule_conflict,international_disabled; no_approved_card_merchant; foreign_merchant,7,9,14,14900,1442,450000
+TR01744,2026-01-05T06:32:47Z,CA0007,ME0051,WorkCanvas,purchase,890,observable_rule_conflict,international_disabled; no_approved_card_merchant; foreign_merchant,5,0,93,8413,4185,400000
+TR01745,2026-01-05T06:39:36Z,CA0007,ME0051,WorkCanvas,purchase,890,observable_rule_conflict,international_disabled; no_approved_card_merchant; recent_decline_same_merchant; foreign_merchant,6,0,93,8413,4185,400000
+TR01761,2026-01-06T13:09:33Z,CA0037,ME0014,Riverside Plate,purchase,5600,behavioral_context_only,first_card_merchant; no_approved_card_merchant; first_card_country; foreign_merchant,0,3,39,8444,11921,280000
+TR01762,2026-01-06T13:30:52Z,CA0007,ME0038,HealthBridge Pharmacy,purchase,2500,unexplained_by_checked_factors,,11,0,94,8413,8795,400000
+TR01778,2026-01-07T12:20:05Z,CA0038,ME0022,PixelHarbor,purchase,295547,observable_rule_conflict,transaction_limit; amount_above_p95,1,2,28,21216,308747,550000
+TR01785,2026-01-07T18:33:52Z,CA0036,ME0025,Loom and Pine,purchase,46595,behavioral_context_only,first_card_merchant; no_approved_card_merchant; amount_above_p95,0,2,23,8400,57342,500000
+TR01805,2026-01-09T12:46:46Z,CA0032,ME0014,Riverside Plate,purchase,5230,observable_rule_conflict,international_disabled; first_card_merchant; no_approved_card_merchant; first_customer_merchant; first_card_country; foreign_merchant,0,0,33,14395,11313,400000
+TR01840,2026-01-12T04:39:46Z,CA0022,ME0051,WorkCanvas,purchase,1818,observable_rule_conflict,international_disabled; no_approved_card_merchant; unusual_hour; foreign_merchant,4,0,72,10703,26918,550000
+TR01862,2026-01-14T07:31:59Z,CA0004,ME0041,IsarNest Hotel,purchase,30200,unexplained_by_checked_factors,foreign_merchant,4,9,39,35032,72238,950000
+TR01902,2026-01-17T06:56:43Z,CA0026,ME0018,NorthTone Digital,purchase,2200,observable_rule_conflict,international_disabled; no_approved_card_merchant; unusual_hour; foreign_merchant,7,0,32,11390,51528,450000
+TR01903,2026-01-17T07:02:30Z,CA0026,ME0018,NorthTone Digital,purchase,2200,observable_rule_conflict,international_disabled; no_approved_card_merchant; recent_decline_same_merchant; unusual_hour; foreign_merchant,8,0,32,11390,51528,450000
+TR01904,2026-01-17T07:03:39Z,CA0026,ME0018,NorthTone Digital,purchase,2200,observable_rule_conflict,international_disabled; no_approved_card_merchant; recent_decline_same_merchant; unusual_hour; foreign_merchant,9,0,32,11390,51528,450000
+TR01905,2026-01-17T07:08:56Z,CA0026,ME0018,NorthTone Digital,purchase,2200,observable_rule_conflict,international_disabled; no_approved_card_merchant; recent_decline_same_merchant; unusual_hour; foreign_merchant,10,0,32,11390,51528,450000
+TR01949,2026-01-20T05:55:28Z,CA0033,ME0051,WorkCanvas,purchase,1390,observable_rule_conflict,international_disabled; no_approved_card_merchant; unusual_hour; foreign_merchant,7,0,35,9000,10975,320000
+TR01990,2026-01-22T19:43:17Z,CA0013,ME0039,MotionCare,purchase,4395,behavioral_context_only,first_card_merchant; no_approved_card_merchant; first_customer_merchant; unusual_hour,0,0,54,14450,126175,550000
+TR01993,2026-01-23T03:07:35Z,CA0002,ME0051,WorkCanvas,purchase,979,unexplained_by_checked_factors,foreign_merchant,4,4,41,9838,42874,450000
+TR02037,2026-01-24T18:32:10Z,CA0030,ME0013,Noon Spoon,purchase,6672,unexplained_by_checked_factors,,4,2,25,24700,129752,650000
+TR02064,2026-01-26T14:26:39Z,CA0033,ME0008,LakeLine Mobility,purchase,6500,unexplained_by_checked_factors,,1,2,39,10595,59713,320000
+TR02082,2026-01-28T11:05:10Z,CA0017,ME0004,Sunrise Provisions,purchase,10470,behavioral_context_only,first_card_merchant; no_approved_card_merchant,0,2,39,12150,35891,360000
+TR02096,2026-01-29T11:12:45Z,CA0007,ME0007,MetroHop,purchase,1941,unexplained_by_checked_factors,,3,0,117,7700,76090,400000
+TR02098,2026-01-29T12:40:21Z,CA0012,ME0049,ScreenGarden,purchase,53496,behavioral_context_only,amount_above_p95,1,0,51,19919,235725,500000
+TR02140,2026-01-31T20:33:46Z,CA0039,ME0024,HarborByte,purchase,39090,behavioral_context_only,amount_above_p95; foreign_merchant,10,0,65,20150,133730,320000
+TR02166,2026-02-03T05:08:04Z,CA0009,ME0018,NorthTone Digital,purchase,1124,observable_rule_conflict,international_disabled; no_approved_card_merchant; unusual_hour; foreign_merchant,8,9,21,8019,1442,450000
+TR02197,2026-02-05T03:56:24Z,CA0007,ME0051,WorkCanvas,purchase,890,observable_rule_conflict,international_disabled; no_approved_card_merchant; foreign_merchant,7,0,125,7700,24900,400000
+TR02198,2026-02-05T03:57:48Z,CA0007,ME0051,WorkCanvas,purchase,890,observable_rule_conflict,international_disabled; no_approved_card_merchant; recent_decline_same_merchant; foreign_merchant,8,0,125,7700,24900,400000
+TR02211,2026-02-06T08:57:00Z,CA0039,ME0024,HarborByte,purchase,13100,unexplained_by_checked_factors,foreign_merchant,11,0,67,20150,16315,320000
+TR02215,2026-02-06T10:04:26Z,CA0002,ME0017,StoryArc Media,purchase,2234,unexplained_by_checked_factors,,1,2,51,9838,8614,450000
+TR02234,2026-02-07T09:18:02Z,CA0025,ME0021,London Leaf Books,purchase,2190,observable_rule_conflict,international_disabled; first_card_merchant; no_approved_card_merchant; first_customer_merchant; first_card_country; burst_10m; foreign_merchant,0,0,46,10128,6500,450000
+TR02237,2026-02-07T13:52:14Z,CA0030,ME0023,Circuit and Pine,purchase,17290,behavioral_context_only,first_card_merchant; no_approved_card_merchant,0,1,30,24700,24880,650000
+TR02298,2026-02-12T03:42:39Z,CA0022,ME0051,WorkCanvas,purchase,1818,observable_rule_conflict,international_disabled; no_approved_card_merchant; foreign_merchant,5,0,85,10300,13560,550000
+TR02301,2026-02-12T10:27:23Z,CA0034,ME0032,Tool and Timber,purchase,17600,behavioral_context_only,amount_above_p95,1,0,97,11500,62795,450000
+TR02311,2026-02-13T02:39:32Z,CA0041,ME0017,StoryArc Media,purchase,1190,unexplained_by_checked_factors,,7,5,64,8995,41258,850000
+TR02359,2026-02-16T20:17:36Z,CA0040,ME0004,Sunrise Provisions,purchase,3235,unexplained_by_checked_factors,,9,8,64,14922,62528,850000
+TR02363,2026-02-17T04:18:39Z,CA0026,ME0018,NorthTone Digital,purchase,2200,observable_rule_conflict,international_disabled; no_approved_card_merchant; unusual_hour; foreign_merchant,11,0,39,11390,30381,450000
+TR02364,2026-02-17T04:20:01Z,CA0026,ME0018,NorthTone Digital,purchase,1869,observable_rule_conflict,international_disabled; no_approved_card_merchant; recent_decline_same_merchant; unusual_hour; foreign_merchant,12,0,39,11390,30050,450000
+TR02371,2026-02-17T15:00:16Z,CA0003,ME0041,IsarNest Hotel,purchase,9750,unexplained_by_checked_factors,foreign_merchant,15,6,61,47090,42069,850000
+TR02372,2026-02-17T15:06:06Z,CA0003,ME0041,IsarNest Hotel,purchase,9750,behavioral_context_only,recent_decline_same_merchant; foreign_merchant,16,6,61,47090,42069,850000
+TR02390,2026-02-18T15:30:51Z,CA0014,ME0025,Loom and Pine,purchase,25795,behavioral_context_only,amount_above_p95; burst_10m,2,0,49,13400,75030,850000
+TR02400,2026-02-19T15:06:03Z,CA0014,ME0055,Parcel and Pine,purchase,6292,unexplained_by_checked_factors,,4,3,49,13400,55527,850000
+TR02412,2026-02-20T04:02:37Z,CA0033,ME0051,WorkCanvas,purchase,1390,observable_rule_conflict,international_disabled; no_approved_card_merchant; unusual_hour; foreign_merchant,8,0,42,9000,24075,320000
+TR02461,2026-02-23T17:53:45Z,CA0038,ME0024,HarborByte,purchase,14613,observable_rule_conflict,international_disabled; no_approved_card_merchant; foreign_merchant,2,11,36,21216,51125,550000
+TR02469,2026-02-24T09:11:45Z,CA0003,ME0044,FlyNorth Europe,purchase,18500,unexplained_by_checked_factors,foreign_merchant,1,0,64,47090,84714,850000
+TR02470,2026-02-24T09:12:08Z,CA0003,ME0044,FlyNorth Europe,purchase,18012,behavioral_context_only,burst_10m; recent_decline_same_merchant; foreign_merchant,2,0,64,47090,84226,850000
+TR02478,2026-02-24T15:07:00Z,CA0006,ME0009,RoadPine Energy,purchase,4036,unexplained_by_checked_factors,,1,2,57,15800,54619,280000
+TR02564,2026-03-03T02:00:24Z,CA0009,ME0018,NorthTone Digital,purchase,1124,observable_rule_conflict,international_disabled; no_approved_card_merchant; unusual_hour; foreign_merchant,9,10,25,8019,1442,450000
+TR02593,2026-03-05T05:52:51Z,CA0007,ME0051,WorkCanvas,purchase,890,observable_rule_conflict,international_disabled; no_approved_card_merchant; foreign_merchant,9,0,149,7950,22573,400000
+TR02616,2026-03-06T15:55:11Z,CA0008,ME0006,RailNest,purchase,1395,behavioral_context_only,first_card_merchant; no_approved_card_merchant,0,2,24,5300,1713,450000
+TR02650,2026-03-09T13:19:24Z,CA0023,ME0019,CloudShelf Books,purchase,3350,unexplained_by_checked_factors,,4,3,85,16195,21830,400000
+TR02663,2026-03-10T09:29:09Z,CA0040,ME0015,MealWing,purchase,4667,unexplained_by_checked_factors,,11,12,72,16800,66939,850000
+TR02668,2026-03-10T15:15:38Z,CA0009,ME0003,Lakeview Grocer,purchase,2650,unexplained_by_checked_factors,,1,1,26,8273,12636,450000
+TR02692,2026-03-12T06:06:13Z,CA0022,ME0051,WorkCanvas,purchase,1818,observable_rule_conflict,international_disabled; no_approved_card_merchant; foreign_merchant,6,0,100,10300,28115,550000
+TR02707,2026-03-13T07:33:33Z,CA0033,ME0037,Happy Trail Pets,purchase,5764,unexplained_by_checked_factors,,4,6,46,10595,27954,320000
+TR02748,2026-03-17T05:27:11Z,CA0026,ME0018,NorthTone Digital,purchase,2200,observable_rule_conflict,international_disabled; no_approved_card_merchant; unusual_hour; foreign_merchant,13,0,44,11190,18002,450000
+TR02785,2026-03-20T05:11:55Z,CA0033,ME0051,WorkCanvas,purchase,1390,observable_rule_conflict,international_disabled; no_approved_card_merchant; unusual_hour; foreign_merchant,9,0,47,10595,25780,320000
+TR02790,2026-03-20T16:26:57Z,CA0019,ME0055,Parcel and Pine,purchase,3521,unexplained_by_checked_factors,,8,10,37,30935,34659,450000
+TR02799,2026-03-21T03:28:27Z,CA0021,ME0017,StoryArc Media,purchase,2195,unexplained_by_checked_factors,,13,2,59,28937,34290,850000
+TR02805,2026-03-21T08:44:37Z,CA0025,ME0001,Alpine Basket,purchase,4090,unexplained_by_checked_factors,,1,2,59,10128,32695,450000
+TR02806,2026-03-21T08:48:06Z,CA0025,ME0005,Rhine Pantry,purchase,6089,observable_rule_conflict,international_disabled; first_card_merchant; no_approved_card_merchant; first_customer_merchant; first_card_country; foreign_merchant,0,0,59,10128,34694,450000
+TR02808,2026-03-21T08:51:31Z,CA0025,ME0005,Rhine Pantry,purchase,5176,observable_rule_conflict,international_disabled; no_approved_card_merchant; burst_10m; recent_decline_same_merchant; foreign_merchant,1,0,60,7621,37258,450000
+TR02850,2026-03-24T02:29:58Z,CA0012,ME0018,NorthTone Digital,purchase,1721,unexplained_by_checked_factors,foreign_merchant,6,0,66,19919,98195,500000
+TR02860,2026-03-24T20:59:38Z,CA0041,ME0025,Loom and Pine,purchase,6000,unexplained_by_checked_factors,,1,7,77,8995,92395,850000
+TR02880,2026-03-26T14:22:29Z,CA0031,ME0017,StoryArc Media,purchase,1069,unexplained_by_checked_factors,,5,3,54,27195,64594,650000
+TR02927,2026-03-28T23:06:26Z,CA0024,ME0006,RailNest,purchase,2900,unexplained_by_checked_factors,,3,2,51,15800,31780,280000
+TR02960,2026-04-01T13:03:03Z,CA0024,ME0027,Milano Weave,purchase,14268,unexplained_by_checked_factors,foreign_merchant,6,8,54,15800,14268,280000
+TR02973,2026-04-02T15:59:55Z,CA0034,ME0013,Noon Spoon,purchase,3500,unexplained_by_checked_factors,,3,0,125,11500,3500,450000
+TR02977,2026-04-03T03:38:30Z,CA0026,ME0018,NorthTone Digital,purchase,1603,observable_rule_conflict,card_inactive; international_disabled; no_approved_card_merchant; unusual_hour; foreign_merchant,14,0,48,11190,1603,450000
+TR02978,2026-04-03T06:51:55Z,CA0009,ME0018,NorthTone Digital,purchase,1124,observable_rule_conflict,international_disabled; no_approved_card_merchant; unusual_hour; foreign_merchant,10,12,28,8273,4637,450000
+TR02990,2026-04-03T16:30:42Z,CA0032,ME0013,Noon Spoon,purchase,3100,unexplained_by_checked_factors,,2,2,62,14395,8450,400000
+TR03013,2026-04-05T05:30:54Z,CA0007,ME0051,WorkCanvas,purchase,890,observable_rule_conflict,international_disabled; no_approved_card_merchant; foreign_merchant,10,0,171,8400,32370,400000
+TR03035,2026-04-07T16:24:14Z,CA0031,ME0023,Circuit and Pine,purchase,24031,unexplained_by_checked_factors,,1,0,58,27195,65141,650000
+TR03068,2026-04-10T03:32:38Z,CA0014,ME0018,NorthTone Digital,purchase,2695,behavioral_context_only,unusual_hour; foreign_merchant,7,0,68,20295,32316,850000
+TR03088,2026-04-11T04:03:57Z,CA0027,ME0018,NorthTone Digital,purchase,1486,unexplained_by_checked_factors,foreign_merchant,8,7,52,16400,74716,850000
+TR03098,2026-04-11T19:20:42Z,CA0031,ME0019,CloudShelf Books,purchase,1690,unexplained_by_checked_factors,,1,4,59,27195,66090,650000
+TR03104,2026-04-12T05:55:09Z,CA0022,ME0051,WorkCanvas,purchase,1818,observable_rule_conflict,international_disabled; no_approved_card_merchant; foreign_merchant,7,0,123,11375,63336,550000
+TR03105,2026-04-12T06:01:42Z,CA0022,ME0051,WorkCanvas,purchase,1818,observable_rule_conflict,international_disabled; no_approved_card_merchant; recent_decline_same_merchant; foreign_merchant,8,0,123,11375,63336,550000
+TR03106,2026-04-12T06:03:07Z,CA0022,ME0051,WorkCanvas,purchase,1818,observable_rule_conflict,international_disabled; no_approved_card_merchant; recent_decline_same_merchant; foreign_merchant,9,0,123,11375,63336,550000
+TR03151,2026-04-15T05:13:15Z,CA0026,ME0018,NorthTone Digital,purchase,4400,observable_rule_conflict,card_inactive; international_disabled; no_approved_card_merchant; unusual_hour; foreign_merchant,15,0,48,11190,47922,450000
+TR03156,2026-04-15T13:20:37Z,CA0003,ME0022,PixelHarbor,purchase,21473,unexplained_by_checked_factors,,2,3,78,47090,74196,850000
+TR03183,2026-04-17T14:42:18Z,CA0005,ME0027,Milano Weave,purchase,25356,behavioral_context_only,amount_above_p95; foreign_merchant,2,2,70,15790,39796,550000
+TR03189,2026-04-17T18:09:37Z,CA0007,ME0015,MealWing,purchase,3395,unexplained_by_checked_factors,,8,0,176,8400,46437,400000
+TR03213,2026-04-20T02:45:51Z,CA0033,ME0051,WorkCanvas,purchase,1390,observable_rule_conflict,international_disabled; no_approved_card_merchant; unusual_hour; foreign_merchant,10,0,61,10595,64503,320000
+TR03304,2026-04-24T22:40:13Z,CA0031,ME0047,SilverFrame,purchase,12190,behavioral_context_only,unusual_hour; foreign_merchant,14,4,63,24495,153183,650000
+TR03306,2026-04-24T22:44:09Z,CA0031,ME0047,SilverFrame,purchase,17495,behavioral_context_only,recent_decline_same_merchant; foreign_merchant,15,4,64,24495,167988,650000
+TR03312,2026-04-25T11:18:24Z,CA0004,ME0041,IsarNest Hotel,purchase,216626,behavioral_context_only,amount_above_p95; foreign_merchant,11,13,79,42500,326330,950000
+TR03359,2026-04-29T18:35:09Z,CA0001,ME0006,RailNest,purchase,3395,behavioral_context_only,first_card_merchant; no_approved_card_merchant,0,3,80,10387,65722,450000
+TR03372,2026-04-30T22:51:14Z,CA0019,ME0026,RainThread,purchase,5690,behavioral_context_only,first_card_merchant; no_approved_card_merchant,0,1,49,16300,55516,450000
+TR03375,2026-05-01T06:18:11Z,CA0026,ME0017,StoryArc Media,purchase,1843,observable_rule_conflict,card_inactive; first_card_merchant; no_approved_card_merchant; first_customer_merchant; unusual_hour,0,0,48,11190,1843,450000
+TR03381,2026-05-01T10:03:04Z,CA0033,ME0018,NorthTone Digital,purchase,953,observable_rule_conflict,international_disabled; no_approved_card_merchant; foreign_merchant,1,0,68,10595,1953,320000
+TR03411,2026-05-03T04:37:38Z,CA0009,ME0018,NorthTone Digital,purchase,1124,observable_rule_conflict,international_disabled; no_approved_card_merchant; unusual_hour; foreign_merchant,11,13,32,8273,2242,450000
+TR03412,2026-05-03T04:39:59Z,CA0009,ME0018,NorthTone Digital,purchase,955,observable_rule_conflict,international_disabled; no_approved_card_merchant; recent_decline_same_merchant; unusual_hour; foreign_merchant,12,13,32,8273,2073,450000
+TR03432,2026-05-05T02:09:10Z,CA0007,ME0051,WorkCanvas,purchase,890,observable_rule_conflict,international_disabled; no_approved_card_merchant; foreign_merchant,11,0,197,7950,10714,400000
+TR03443,2026-05-05T15:57:25Z,CA0009,ME0005,Rhine Pantry,purchase,3400,observable_rule_conflict,international_disabled; first_card_merchant; no_approved_card_merchant; first_customer_merchant; first_card_country; foreign_merchant,0,0,34,8273,10153,450000
+TR03444,2026-05-05T16:01:54Z,CA0009,ME0005,Rhine Pantry,purchase,2890,observable_rule_conflict,international_disabled; no_approved_card_merchant; recent_decline_same_merchant; foreign_merchant,1,0,34,8273,9643,450000
+TR03445,2026-05-05T16:05:03Z,CA0009,ME0005,Rhine Pantry,purchase,2890,observable_rule_conflict,international_disabled; no_approved_card_merchant; recent_decline_same_merchant; foreign_merchant,2,0,34,8273,9643,450000
+TR03493,2026-05-09T12:59:58Z,CA0025,ME0026,RainThread,purchase,3990,behavioral_context_only,first_card_merchant; no_approved_card_merchant,0,2,88,8100,36812,450000
+TR03496,2026-05-09T13:51:45Z,CA0010,ME0018,NorthTone Digital,purchase,739,unexplained_by_checked_factors,foreign_merchant,14,0,55,10500,16289,360000
+TR03508,2026-05-10T04:59:46Z,CA0014,ME0018,NorthTone Digital,purchase,2695,unexplained_by_checked_factors,foreign_merchant,8,0,74,20295,21763,850000
+TR03529,2026-05-11T14:23:20Z,CA0020,ME0026,RainThread,purchase,12600,behavioral_context_only,first_card_merchant; no_approved_card_merchant; first_customer_merchant,0,0,83,27990,22018,750000
+TR03540,2026-05-12T06:55:49Z,CA0022,ME0051,WorkCanvas,purchase,1818,observable_rule_conflict,international_disabled; no_approved_card_merchant; foreign_merchant,10,0,141,10703,59104,550000
+TR03579,2026-05-14T10:14:53Z,CA0020,ME0041,IsarNest Hotel,purchase,87938,behavioral_context_only,amount_above_p95; foreign_merchant,1,2,85,27990,114875,750000
+TR03631,2026-05-18T11:56:05Z,CA0028,ME0026,RainThread,purchase,9000,behavioral_context_only,first_card_merchant; no_approved_card_merchant,0,4,59,13800,55295,850000
+TR03655,2026-05-20T02:03:03Z,CA0033,ME0051,WorkCanvas,purchase,1390,observable_rule_conflict,international_disabled; no_approved_card_merchant; unusual_hour; foreign_merchant,11,0,72,10595,20022,320000
+TR03656,2026-05-20T02:09:51Z,CA0033,ME0051,WorkCanvas,purchase,1390,observable_rule_conflict,international_disabled; no_approved_card_merchant; recent_decline_same_merchant; unusual_hour; foreign_merchant,12,0,72,10595,20022,320000
+TR03657,2026-05-20T02:15:43Z,CA0033,ME0051,WorkCanvas,purchase,1182,observable_rule_conflict,international_disabled; no_approved_card_merchant; recent_decline_same_merchant; unusual_hour; foreign_merchant,13,0,72,10595,19814,320000
+TR03662,2026-05-20T10:59:53Z,CA0003,ME0041,IsarNest Hotel,purchase,33195,unexplained_by_checked_factors,foreign_merchant,21,9,90,47090,157003,850000
+TR03722,2026-05-23T20:43:50Z,CA0020,ME0024,HarborByte,purchase,31834,behavioral_context_only,amount_above_p95; foreign_merchant,7,0,93,27990,123050,750000
+TR03739,2026-05-25T11:05:41Z,CA0007,ME0006,RailNest,purchase,990,unexplained_by_checked_factors,,4,0,213,7950,83939,400000
+TR03804,2026-05-30T04:02:49Z,CA0009,ME0017,StoryArc Media,purchase,1703,observable_rule_conflict,card_inactive; unusual_hour,5,24,36,8273,90829,450000
+TR03885,2026-06-05T06:08:01Z,CA0007,ME0051,WorkCanvas,purchase,890,observable_rule_conflict,international_disabled; no_approved_card_merchant; foreign_merchant,12,0,226,7950,20325,400000
+TR03896,2026-06-05T16:49:50Z,CA0003,ME0008,LakeLine Mobility,purchase,5590,unexplained_by_checked_factors,,4,1,97,47400,63048,850000
+TR03939,2026-06-09T06:06:04Z,CA0009,ME0017,StoryArc Media,purchase,995,observable_rule_conflict,card_inactive; unusual_hour,6,25,36,8273,9891,450000
+TR03948,2026-06-09T18:58:39Z,CA0028,ME0017,StoryArc Media,purchase,1465,unexplained_by_checked_factors,,6,7,68,13800,37496,850000
+TR03949,2026-06-09T19:09:22Z,CA0012,ME0002,Neighbour Pantry,purchase,10590,unexplained_by_checked_factors,,10,6,91,18990,10590,500000
+TR03984,2026-06-12T06:37:21Z,CA0022,ME0051,WorkCanvas,purchase,1818,observable_rule_conflict,international_disabled; no_approved_card_merchant; foreign_merchant,11,0,165,10703,30307,550000
+TR04003,2026-06-13T02:27:14Z,CA0009,ME0017,StoryArc Media,purchase,1700,observable_rule_conflict,card_inactive; unusual_hour,7,25,36,8273,10596,450000
+TR04008,2026-06-13T08:24:26Z,CA0008,ME0020,BrightPage Learning,purchase,26002,behavioral_context_only,amount_above_p95,5,9,46,8100,34898,450000
+TR04073,2026-06-18T16:18:20Z,CA0034,ME0017,StoryArc Media,purchase,1395,unexplained_by_checked_factors,,8,0,172,11500,31475,450000
+TR04091,2026-06-20T06:09:38Z,CA0033,ME0051,WorkCanvas,purchase,1390,observable_rule_conflict,international_disabled; no_approved_card_merchant; unusual_hour; foreign_merchant,14,0,82,9450,29432,320000
+TR04102,2026-06-20T18:31:08Z,CA0019,ME0056,RoomKind,purchase,4695,unexplained_by_checked_factors,,2,7,62,12500,67735,450000
+TR04124,2026-06-22T20:09:50Z,CA0035,ME0055,Parcel and Pine,purchase,52497,behavioral_context_only,amount_above_p95,5,12,71,10700,71248,500000
+TR04128,2026-06-23T06:56:50Z,CA0013,ME0017,StoryArc Media,purchase,1993,unexplained_by_checked_factors,,11,2,97,14800,37525,550000
+TR04150,2026-06-24T15:08:12Z,CA0022,ME0014,Riverside Plate,purchase,3233,observable_rule_conflict,international_disabled; first_card_merchant; no_approved_card_merchant; first_customer_merchant; first_card_country; foreign_merchant,0,0,172,10703,52728,550000
+TR04155,2026-06-24T18:27:55Z,CA0022,ME0038,HealthBridge Pharmacy,purchase,3495,unexplained_by_checked_factors,,6,0,173,10703,56485,550000
+TR04227,2026-06-29T19:08:11Z,CA0040,ME0019,CloudShelf Books,purchase,2600,unexplained_by_checked_factors,,3,3,103,15895,107511,850000
+TR04293,2026-07-05T06:38:32Z,CA0007,ME0051,WorkCanvas,purchase,890,observable_rule_conflict,international_disabled; no_approved_card_merchant; foreign_merchant,13,0,245,8190,3880,400000
+TR04294,2026-07-05T06:40:31Z,CA0007,ME0051,WorkCanvas,purchase,756,observable_rule_conflict,international_disabled; no_approved_card_merchant; recent_decline_same_merchant; foreign_merchant,14,0,245,8190,3746,400000
+TR04376,2026-07-11T14:39:00Z,CA0003,ME0011,Cedar Table,purchase,18050,unexplained_by_checked_factors,,2,2,108,47090,34945,850000
+TR04379,2026-07-11T17:02:09Z,CA0018,ME0015,MealWing,purchase,2990,unexplained_by_checked_factors,,9,7,123,8135,26606,450000
+TR04390,2026-07-12T02:12:03Z,CA0022,ME0051,WorkCanvas,purchase,1818,observable_rule_conflict,international_disabled; no_approved_card_merchant; foreign_merchant,12,0,186,10300,35531,550000
+TR04391,2026-07-12T02:17:14Z,CA0022,ME0051,WorkCanvas,purchase,1546,observable_rule_conflict,international_disabled; no_approved_card_merchant; recent_decline_same_merchant; foreign_merchant,13,0,186,10300,35259,550000
+TR04401,2026-07-13T02:49:36Z,CA0005,ME0052,PlainLedger,purchase,900,unexplained_by_checked_factors,,22,0,96,15427,38858,550000
+TR04415,2026-07-13T16:37:49Z,CA0031,ME0047,SilverFrame,purchase,61700,behavioral_context_only,amount_above_p95; foreign_merchant,20,7,89,26300,123120,650000
+TR04421,2026-07-13T18:43:50Z,CA0034,ME0056,RoomKind,purchase,7399,behavioral_context_only,burst_10m,21,0,184,11500,54818,450000
+TR04441,2026-07-15T08:58:25Z,CA0003,ME0044,FlyNorth Europe,purchase,38400,behavioral_context_only,burst_10m; foreign_merchant,5,0,112,47400,184614,850000
+TR04443,2026-07-15T12:23:47Z,CA0033,ME0013,Noon Spoon,purchase,1656,unexplained_by_checked_factors,,4,2,89,10595,38752,320000
+TR04484,2026-07-17T18:15:39Z,CA0013,ME0055,Parcel and Pine,purchase,3146,unexplained_by_checked_factors,,3,10,113,15421,109001,550000
+TR04488,2026-07-17T22:52:24Z,CA0023,ME0015,MealWing,purchase,5600,unexplained_by_checked_factors,,4,2,148,16195,53503,400000
+TR04496,2026-07-18T12:51:17Z,CA0004,ME0006,RailNest,purchase,4189,unexplained_by_checked_factors,,2,5,107,38663,120334,950000
+TR04513,2026-07-19T19:59:07Z,CA0006,ME0030,AlpenWerk Sport,purchase,25384,behavioral_context_only,amount_above_p95; foreign_merchant,14,10,101,15000,34027,280000
+TR04516,2026-07-20T02:31:07Z,CA0033,ME0051,WorkCanvas,purchase,1390,observable_rule_conflict,international_disabled; no_approved_card_merchant; unusual_hour; foreign_merchant,15,0,94,10595,56488,320000
+TR04549,2026-07-22T10:44:20Z,CA0031,ME0047,SilverFrame,purchase,208093,observable_rule_conflict,transaction_limit; amount_above_p95; foreign_merchant,23,7,96,26300,364776,650000
+TR04595,2026-07-24T17:50:45Z,CA0003,ME0006,RailNest,purchase,11890,unexplained_by_checked_factors,,5,2,116,47400,191738,850000
+TR04597,2026-07-24T17:55:52Z,CA0003,ME0008,LakeLine Mobility,purchase,3700,behavioral_context_only,burst_10m,7,1,117,47400,185985,850000
+TR04621,2026-07-26T10:48:11Z,CA0022,ME0011,Cedar Table,purchase,5614,unexplained_by_checked_factors,,30,0,195,10300,76339,550000
+TR04624,2026-07-26T13:49:23Z,CA0018,ME0016,NightOwl Kitchen,purchase,6150,unexplained_by_checked_factors,,8,0,130,8195,104684,450000
+TR04656,2026-07-28T12:39:24Z,CA0038,ME0027,Milano Weave,purchase,16300,observable_rule_conflict,international_disabled; first_card_merchant; no_approved_card_merchant; first_customer_merchant; first_card_country; amount_above_p95; foreign_merchant,0,0,71,14900,61562,550000
+TR04686,2026-07-30T18:09:01Z,CA0020,ME0008,LakeLine Mobility,purchase,3590,unexplained_by_checked_factors,,2,1,114,30490,143339,750000
