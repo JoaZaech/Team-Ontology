@@ -72,7 +72,7 @@ used as precomputed truth; evidence is recalculated from source rows.
 
 ## Outputs and audit
 
-`build/` is generated. Review pages and decline-audit outputs are tracked; large intermediate files are ignored:
+`build/` is generated and all its outputs are tracked in Git:
 
 - `data_quality_report.json`, `source_graph.json`, `graph_validation_report.json`
 - `precomputed_evidence.json`, `historical_evidence_index.json`, `ontology.json`
@@ -142,9 +142,9 @@ Open `build/index.html` for all report links:
 - `build/decline_audit/decline_case_index.csv`: compact case index.
 - `build/README.md` and `build/report_manifest.json`: output-to-source mapping.
 
-The browser-ready review pages, report index, manifest, and decline-audit outputs
-are tracked in Git so teammates can open them after cloning. Large graph JSON
-intermediates, latency outputs, and the virtual environment remain ignored.
+All build outputs, including graph JSON intermediates, simulation results,
+latency measurements, review pages and decline-audit outputs, are tracked in Git.
+Virtual environments, Python caches, local secrets and editor state remain ignored.
 Edit source code and templates, regenerate, then commit the updated pages.
 The graph's JavaScript, CSS, and data are embedded in each generated HTML file;
 there is no separate runtime script to look for inside `build/`.

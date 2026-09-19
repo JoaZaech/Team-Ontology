@@ -1,0 +1,58 @@
+{
+  "amount limit": {
+    "concept": "TransactionLimit",
+    "field": "billing_amount_chf"
+  },
+  "cancellable": {
+    "concept": "Cancellable",
+    "field": "order_cancellable"
+  },
+  "channel": {
+    "concept": "Channel",
+    "field": "channel"
+  },
+  "country": {
+    "concept": "Country",
+    "field": "merchant.merchant_country"
+  },
+  "currency": {
+    "concept": "Currency",
+    "field": "currency"
+  },
+  "delivery": {
+    "concept": "Delivery",
+    "field": "fulfillment_method"
+  },
+  "familiar device": {
+    "concept": "FamiliarDevice",
+    "condition": "approved_count > 0",
+    "field": "card_device.approved_count",
+    "relationship": "USED_DEVICE"
+  },
+  "familiar shop": {
+    "concept": "FamiliarMerchant",
+    "condition": "approved_count > 0",
+    "field": "card_merchant.approved_count",
+    "relationship": "USED_MERCHANT"
+  },
+  "item category": {
+    "concept": "ItemCategory",
+    "field": "items[].item_category"
+  },
+  "merchant category": {
+    "concept": "MerchantCategory",
+    "field": "merchant.merchant_category"
+  },
+  "quantity": {
+    "concept": "Quantity",
+    "field": "items[].quantity"
+  },
+  "recurring": {
+    "concept": "Recurring",
+    "field": "recurring"
+  },
+  "returnable": {
+    "concept": "Returnable",
+    "field": "order_returnable"
+  }
+}

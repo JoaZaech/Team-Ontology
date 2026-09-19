@@ -1,5 +1,5 @@
 {
-  "large_intermediate_graph_files_git_ignored": true,
+  "large_intermediate_graph_files_git_ignored": false,
   "outputs": {
     "decline_audit/decline_smoke_report.html": [
       "kg_rootcause/audit/factors.py",

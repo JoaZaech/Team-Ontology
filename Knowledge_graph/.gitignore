@@ -1,11 +1,5 @@
+# Local Python environment and caches only; generated build outputs are shared.
 .venv/
 __pycache__/
-# Large/rebuildable intermediate outputs stay local.
-build/*
-# Portable review deliverables are shared in Git.
-!build/index.html
-!build/README.md
-!build/report_manifest.json
-!build/precomputed-knowledge-graph.html
-!build/tr03359-reason-review.html
-!build/decline_audit/
+.pytest_cache/
+*.py[cod]

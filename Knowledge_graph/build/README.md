@@ -1,6 +1,6 @@
 # Generated reports
 
-Review pages and decline audit outputs are tracked in Git; large intermediate graph outputs are ignored. Edit source files in ../kg_rootcause, then regenerate the pages.
+All generated reports and intermediate graph outputs are tracked in Git. Edit source files in ../kg_rootcause, then regenerate the pages.
 
 From Knowledge_graph, regenerate everything with:
 

@@ -1,0 +1,42 @@
+[
+  {
+    "authorization_id": "AU0002",
+    "latency_ms": 124.327833
+  },
+  {
+    "authorization_id": "AU0003",
+    "latency_ms": 128.979125
+  },
+  {
+    "authorization_id": "AU0004",
+    "latency_ms": 131.457916
+  },
+  {
+    "authorization_id": "AU0005",
+    "latency_ms": 445.567167
+  },
+  {
+    "authorization_id": "AU0006",
+    "latency_ms": 138.9125
+  },
+  {
+    "authorization_id": "AU0007",
+    "latency_ms": 146.196375
+  },
+  {
+    "authorization_id": "AU0008",
+    "latency_ms": 149.112167
+  },
+  {
+    "authorization_id": "AU0009",
+    "latency_ms": 146.070959
+  },
+  {
+    "authorization_id": "AU0010",
+    "latency_ms": 154.937291
+  },
+  {
+    "authorization_id": "AU0011",
+    "latency_ms": 158.809
+  }
+]
