@@ -112,7 +112,7 @@ DEFAULT_ERROR_CLASSES = frozenset({
 })
 
 CONTROLLED_LABEL_VALUES: dict[str, frozenset[object]] = {
-    "component": frozenset({"guardian", "mock_api", "receipt_store", "rulebook", "viseca_mock"}),
+    "component": frozenset({"guardian", "mock_api", "receipt_store", "rulebook", "viseca_mock", "workflow_service"}),
     "dependency": frozenset({"context", "graph", "model", "storage", "viseca"}),
     "outcome": frozenset({"approve", "decline", "step_up"}),
     "status": frozenset({

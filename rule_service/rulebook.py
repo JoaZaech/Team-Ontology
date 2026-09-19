@@ -71,8 +71,8 @@ def evaluate_request(
             total = subtotal + _money(authorization["delivery_fee"])
             if (total != _money(authorization["billing_amount_chf"]) or
                     subtotal != _money(authorization["items_subtotal"])):
-                add("order total", "fail", "order_total_mismatch",
-                    "Item prices plus delivery must equal the billed CHF total.")
+                add("order total", "review", "order_total_mismatch",
+                    "The billed total does not reconcile with the item prices and delivery fee. Human review is required.")
             else:
                 add("order total", "pass", "order_total_verified",
                     f"CHF {subtotal:.2f} in items plus CHF {_money(authorization['delivery_fee']):.2f} delivery.")

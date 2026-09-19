@@ -5,6 +5,7 @@ from .frontend_contract.viewer import render_viewer
 from .ingestion import load_dataset, DataQualityError
 from .precompute import EvidenceIndex, precompute_summaries
 from .precompute.graph import build_knowledge, validate_graph
+from .recommendations import build_policy_recommendations
 from .schema import validate
 from .semantic import ONTOLOGY, baseline_policy, compile_semantics
 from .simulation import simulate, build_report
@@ -35,6 +36,7 @@ def main():
     index = EvidenceIndex(dataset)
     # Reusable time-indexed source evidence, never precomputed fixture outcomes.
     write_json(args.output / "historical_evidence_index.json", dict(index.by_card))
+    write_json(args.output / "policy_recommendations.json", build_policy_recommendations(index.by_card))
     requests = sorted((r for r in dataset["tables"]["purchase_attempts"] if r["scenario_id"] == "SCEN0001"), key=lambda r: r["replay_order"])
     policy = baseline_policy()
     first, telemetry = simulate(requests, dataset, snapshot, index, policy)

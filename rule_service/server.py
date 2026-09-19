@@ -27,6 +27,7 @@ from wallet_policy import (
     PolicyValidationError,
     SQLiteWalletPolicyStore,
     WalletPolicyStore,
+    receipt_policy_rules,
 )
 
 
@@ -34,9 +35,15 @@ DATA_DIR = Path(__file__).resolve().parents[1] / "viseca-2026" / "data"
 DEFAULT_POLICY_DB_PATH = Path(
     os.environ.get("RULE_SERVICE_DB_PATH", Path(__file__).resolve().parent / "var" / "rules.sqlite3")
 )
-DEFAULT_PORT = 8083
+DEFAULT_PORT = int(os.environ.get("RULE_SERVICE_PORT", "8083"))
 MAX_BODY_BYTES = 64 * 1024
 REQUEST_TIMEOUT_SECONDS = 5
+
+
+def _policy_response(policy: Mapping[str, Any]) -> dict[str, Any]:
+    """Expose the stored policy and its rule-service-owned receipt projection."""
+
+    return {**policy, "receiptRules": receipt_policy_rules(policy)}
 
 
 class RuleEngineState:
@@ -51,7 +58,9 @@ class RuleEngineState:
         if not isinstance(token, str) or len(token) < 32:
             raise ValueError("RULE_SERVICE_API_TOKEN must be at least 32 characters")
         self.history = MerchantHistory.from_data_dir(data_dir)
-        self.policy_store = policy_store or SQLiteWalletPolicyStore(policy_db_path)
+        self.policy_store = policy_store or SQLiteWalletPolicyStore(
+            policy_db_path, knowledge_graph_data_dir=data_dir
+        )
         self.api_token = token
 
 
@@ -140,7 +149,7 @@ def make_handler(state: RuleEngineState):
             if not self._can_access_service():
                 return
             try:
-                self._json(200, state.policy_store.update(self._read_json_body()))
+                self._json(200, _policy_response(state.policy_store.update(self._read_json_body())))
             except PolicyConflictError as exc:
                 self._json(409, {"error": str(exc)})
             except PolicyIntegrityError as exc:
@@ -167,6 +176,8 @@ def make_handler(state: RuleEngineState):
                 self._evaluate(body)
             elif path == "/v1/rules/guard":
                 self._guard(body)
+            elif path == "/v1/rules/policies/from-knowledge-graph":
+                self._create_policy_from_knowledge_graph(body)
             elif path == "/v1/rules/policies":
                 self._create_policy(body)
             else:
@@ -174,7 +185,7 @@ def make_handler(state: RuleEngineState):
 
         def _read_policy(self, policy_id: str | None = None):
             try:
-                self._json(200, state.policy_store.get(policy_id))
+                self._json(200, _policy_response(state.policy_store.get(policy_id)))
             except PolicyIntegrityError as exc:
                 self._json(503, {"error": str(exc)})
             except PolicyValidationError as exc:
@@ -246,6 +257,21 @@ def make_handler(state: RuleEngineState):
         def _create_policy(self, body: Any):
             try:
                 self._json(201, state.policy_store.create(body))
+            except PolicyConflictError as exc:
+                self._json(409, {"error": str(exc)})
+            except (PolicyValidationError, ValueError) as exc:
+                self._json(400, {"error": str(exc)})
+
+        def _create_policy_from_knowledge_graph(self, body: Any):
+            try:
+                if not isinstance(body, Mapping) or set(body) != {"cardId"}:
+                    raise PolicyValidationError("knowledge graph policy request is invalid")
+                create_from_knowledge_graph = getattr(
+                    state.policy_store, "create_from_knowledge_graph", None
+                )
+                if create_from_knowledge_graph is None:
+                    raise PolicyValidationError("knowledge graph policy creation is unavailable")
+                self._json(201, _policy_response(create_from_knowledge_graph(body["cardId"])))
             except PolicyConflictError as exc:
                 self._json(409, {"error": str(exc)})
             except (PolicyValidationError, ValueError) as exc:

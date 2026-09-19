@@ -179,7 +179,7 @@ test("approves the supplied AU0001 fixture through the frontend workflow", async
   );
 
   await page.goto("/#workflow");
-  await expect(page.getByRole("heading", { name: "Approved. Ready to continue." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Transaction successful." })).toBeVisible();
 
   const requestBody = await (await requestResponsePromise).json();
   expect(requestBody.data.authorization.source_authorization_id).toBe("AU0001");
@@ -206,15 +206,48 @@ test("approves the supplied AU0001 fixture through the frontend workflow", async
 
   const decisionBody = await (await decisionResponsePromise).json();
   expect(decisionBody).toMatchObject({ status: "recorded", decision: "approve" });
+  await expect(page.getByRole("heading", { name: "Transaction successful." })).toBeVisible();
   await expect(page.getByText("The purchase matches your wallet policy.")).toBeVisible();
   await expect(page.getByRole("heading", { name: "What the agent asked to buy" })).toBeVisible();
   await expect(page.getByText("Grocery delivery order")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Rules used for this decision" })).toBeVisible();
-  await expect(page.getByText("Purchase total <= CHF 20.00.")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "How this decision was made" })).toBeVisible();
+  await expect(page.getByText("10 of 10 checks passed")).toBeVisible();
+  await page.getByRole("button", { name: "Matches your rules" }).click();
+  await page.getByRole("button", { name: /Daily spending limit/ }).click();
+  await expect(page.getByText("What this rule allows")).toBeVisible();
+  await expect(page.getByText("Approval stops when that combined amount would exceed the daily limit.")).toBeVisible();
 
   await attachRuntime(testInfo, {
     totalWorkflowMs: Number((performance.now() - startedAt).toFixed(2)),
     ruleEngineHttpMs: Number((await responseDurationMs(evaluationResponse)).toFixed(2)),
+  });
+});
+
+test("records a completed agent transaction in live activity", async ({ page, request }, testInfo) => {
+  await restoreWalletPolicy(request);
+  const startedAt = performance.now();
+
+  await page.goto("/#workflow");
+  await expect(page.getByRole("heading", { name: "Transaction successful." })).toBeVisible();
+  await page.goto("/#activity");
+  await expect(page.getByRole("heading", { name: "Activity" })).toBeVisible();
+  await expect(page.getByText("Alpine Basket").first()).toBeVisible();
+  await expect(page.getByText("Approved automatically").first()).toBeVisible();
+
+  const activityResponse = await request.get("/mock/activity", { headers: authorizationHeaders });
+  expect(activityResponse.ok()).toBeTruthy();
+  const activity = await activityResponse.json() as {
+    transactions: Array<{ authorization_id: string; proposal_summary: string; status: string }>;
+  };
+  expect(activity.transactions).toContainEqual(expect.objectContaining({
+    authorization_id: "MOCK_AU0001",
+    proposal_summary: "Grocery delivery order",
+    status: "approved",
+  }));
+
+  await attachRuntime(testInfo, {
+    totalActivityFlowMs: Number((performance.now() - startedAt).toFixed(2)),
+    activityTransactions: activity.transactions.length,
   });
 });
 
@@ -260,7 +293,6 @@ test("enforces a CHF 10 policy change and declines AU0001 in the frontend", asyn
   expect(await (await decisionResponsePromise).json()).toMatchObject({ status: "recorded", decision: "decline" });
   await expect(page.getByText("This purchase exceeds the daily spending limit")).toBeVisible();
   await expect(page.getByRole("heading", { name: "What the agent asked to buy" })).toBeVisible();
-  await expect(page.getByText("Up to CHF 10.00 per day.")).toBeVisible();
 
   await attachRuntime(testInfo, {
     policyUpdateHttpMs: Number((await responseDurationMs(policyResponse)).toFixed(2)),

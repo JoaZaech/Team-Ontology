@@ -123,6 +123,12 @@ export const FIXTURE_ENVELOPE: DecisionEnvelope = {
         },
         review_triggers: ["new_merchant"],
         assistant_authority: "trusted",
+        rules: [{
+          id: "daily-spending-limit",
+          label: "Daily spending limit",
+          detail: "Up to CHF 1500.00 per day.",
+          enforcement: "The purchase amount is added to today’s completed spending. Approval stops when that combined amount would exceed the daily limit.",
+        }],
       },
     },
     context: { approved_spend_in_period_chf: 0.0, recent_authorizations: [] },

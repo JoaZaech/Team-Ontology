@@ -76,6 +76,7 @@ used as precomputed truth; evidence is recalculated from source rows.
 
 - `data_quality_report.json`, `source_graph.json`, `graph_validation_report.json`
 - `precomputed_evidence.json`, `historical_evidence_index.json`, `ontology.json`
+- `policy_recommendations.json`: customer-confirmable category-limit drafts derived from approved purchase evidence, with historical declines retained only as context
 - `semantic_policy_draft.json`
 - `simulation_results.json`, `replay_results.json`
 - `latency.json`, `replay_latency.json`
@@ -115,6 +116,12 @@ catalogue states cannot be reconstructed at historical dates. Source provenance
 uses the pack's fixed-rate date as its snapshot convention; it is not a claim
 about when a production system learned a record. Historical billing evidence
 uses supplied billing amounts, not a lookup of future-dated FX records.
+
+`policy_recommendations.json` is a precomputed policy-drafting aid, not an
+authorization model. It calculates a rounded $p95$ category maximum from prior
+approved purchases and retains decline counts for context without treating them
+as customer preferences. A customer must explicitly apply a draft through the
+versioned wallet-policy API before the rule engine can enforce it.
 
 Runtime proofs, step-up resolution, general unseen-transaction ingestion, a real
 frontend adapter, production storage, 45/100/1,000-request expansion, and the

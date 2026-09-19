@@ -221,6 +221,18 @@ class DecisionReceiptLedger:
             BEGIN
                 SELECT RAISE(ABORT, 'decision receipt ledger is append-only');
             END;
+            CREATE TABLE IF NOT EXISTS receipt_outbox_events (
+                sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+                event_id TEXT NOT NULL UNIQUE,
+                receipt_hash TEXT NOT NULL UNIQUE,
+                event_type TEXT NOT NULL,
+                payload_json TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                published_at TEXT,
+                attempts INTEGER NOT NULL DEFAULT 0,
+                last_error TEXT,
+                FOREIGN KEY (receipt_hash) REFERENCES decision_receipts(receipt_hash)
+            );
             """
         )
 
@@ -261,6 +273,7 @@ class DecisionReceiptLedger:
         deadline_at: str | None = None,
         deadline_remaining_ms: int | None = None,
         final_resolution: Mapping[str, Any] | None = None,
+        outbox_event: Mapping[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Append a decision receipt or return its idempotent prior record."""
 
@@ -333,6 +346,8 @@ class DecisionReceiptLedger:
                         record["recorded_at"],
                     ),
                 )
+                if outbox_event is not None:
+                    self._store_outbox_event(record, outbox_event)
                 self._connection.commit()
                 return record
             except BaseException:
@@ -363,6 +378,92 @@ class DecisionReceiptLedger:
             records = tuple(self._record_from_row(row) for row in rows)
         return iter(records)
 
+    def pending_outbox_events(self, limit: int = 100) -> tuple[dict[str, Any], ...]:
+        """Return receipt-safe flywheel events awaiting delivery."""
+
+        if isinstance(limit, bool) or not isinstance(limit, int) or limit < 1:
+            raise ValueError("limit must be a positive integer")
+        with self._lock:
+            self._ensure_open()
+            rows = self._connection.execute(
+                """
+                SELECT event_id, event_type, payload_json, created_at, attempts, last_error
+                FROM receipt_outbox_events
+                WHERE published_at IS NULL
+                ORDER BY sequence ASC
+                LIMIT ?
+                """,
+                (limit,),
+            ).fetchall()
+        events: list[dict[str, Any]] = []
+        for row in rows:
+            try:
+                payload = json.loads(row["payload_json"])
+            except (TypeError, json.JSONDecodeError) as exc:
+                raise ReceiptIntegrityError("receipt outbox contains invalid stored JSON") from exc
+            if not isinstance(payload, dict) or payload.get("event_id") != row["event_id"]:
+                raise ReceiptIntegrityError("receipt outbox event does not match its stored key")
+            events.append({
+                "event_id": row["event_id"],
+                "event_type": row["event_type"],
+                "payload": payload,
+                "created_at": row["created_at"],
+                "attempts": row["attempts"],
+                "last_error": row["last_error"],
+            })
+        return tuple(events)
+
+    def mark_outbox_published(self, event_id: str) -> None:
+        """Mark an event delivered after an idempotent consumer acknowledges it."""
+
+        key = _required_text(event_id, "event_id")
+        with self._lock:
+            self._ensure_open()
+            self._connection.execute(
+                """
+                UPDATE receipt_outbox_events
+                SET published_at = COALESCE(published_at, ?), last_error = NULL
+                WHERE event_id = ?
+                """,
+                (self._recorded_at(), key),
+            )
+
+    def record_outbox_failure(self, event_id: str, error: str) -> None:
+        """Retain a delivery failure for asynchronous retry and operator visibility."""
+
+        key = _required_text(event_id, "event_id")
+        detail = _required_text(error, "error")
+        with self._lock:
+            self._ensure_open()
+            self._connection.execute(
+                """
+                UPDATE receipt_outbox_events
+                SET attempts = attempts + 1, last_error = ?
+                WHERE event_id = ? AND published_at IS NULL
+                """,
+                (detail[:512], key),
+            )
+
+    def outbox_status(self) -> dict[str, Any]:
+        """Return bounded delivery status without exposing event payloads."""
+
+        with self._lock:
+            self._ensure_open()
+            row = self._connection.execute(
+                """
+                SELECT
+                    COUNT(*) FILTER (WHERE published_at IS NULL) AS pending_count,
+                    COUNT(*) FILTER (WHERE published_at IS NOT NULL) AS published_count,
+                    MAX(attempts) AS max_attempts
+                FROM receipt_outbox_events
+                """
+            ).fetchone()
+        return {
+            "pending_count": row["pending_count"],
+            "published_count": row["published_count"],
+            "max_attempts": row["max_attempts"] or 0,
+        }
+
     def verify_chain(self) -> None:
         """Raise ReceiptIntegrityError unless every persisted receipt verifies."""
 
@@ -390,6 +491,41 @@ class DecisionReceiptLedger:
         else:
             value = value.astimezone(timezone.utc)
         return value.isoformat(timespec="microseconds").replace("+00:00", "Z")
+
+    def _store_outbox_event(
+        self,
+        receipt: Mapping[str, Any],
+        outbox_event: Mapping[str, Any],
+    ) -> None:
+        if not isinstance(outbox_event, Mapping):
+            raise InvalidReceiptError("outbox_event must be an object")
+        payload = _normalise_json(outbox_event)
+        if not isinstance(payload, dict):
+            raise InvalidReceiptError("outbox_event must be an object")
+        if "event_id" in payload:
+            raise InvalidReceiptError("outbox_event must not supply event_id")
+        event_type = _required_text(payload.get("event_type"), "outbox_event.event_type")
+        event_id = _required_text(receipt.get("receipt_hash"), "receipt_hash")
+        provenance = payload.get("provenance")
+        if isinstance(provenance, Mapping):
+            if "receipt_hash" in provenance and provenance["receipt_hash"] != event_id:
+                raise InvalidReceiptError("outbox_event provenance receipt_hash must match the receipt")
+            payload["provenance"] = {**provenance, "receipt_hash": event_id}
+        stored_payload = {**payload, "event_id": event_id}
+        self._connection.execute(
+            """
+            INSERT INTO receipt_outbox_events (
+                event_id, receipt_hash, event_type, payload_json, created_at
+            ) VALUES (?, ?, ?, ?, ?)
+            """,
+            (
+                event_id,
+                event_id,
+                event_type,
+                canonical_json(stored_payload),
+                _required_text(receipt.get("recorded_at"), "recorded_at"),
+            ),
+        )
 
     def _submission(
         self,

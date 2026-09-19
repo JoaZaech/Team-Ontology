@@ -27,6 +27,7 @@ from benchmark_policy import (
     validate_event_binding,
     validate_scenario_policy_document,
 )
+from knowledge_graph_policy import build_wallet_policy_from_knowledge_graph
 
 
 REVIEW_TRIGGERS = frozenset({"new_merchant", "online_purchase", "unusual_activity"})
@@ -72,49 +73,10 @@ def _iso_now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
 
 
-def default_wallet_policy_document() -> dict[str, Any]:
-    """Return the server-owned default used by the local demonstration.
-
-    The confirmed mandate still has the stricter CHF 20 purchase ceiling.  The
-    dynamic policy adds an independent daily limit, category limits, and a
-    customer-selected prompt for a first purchase with a merchant.
-    """
-
-    return {
-        "policyId": "wallet-policy_CA0001_default",
-        "schemaVersion": "2026-09-01",
-        "revision": 1,
-        "subject": {"customerId": "CU0001", "cardId": "CA0001"},
-        "enabled": True,
-        "dailySpendingLimitChf": 1500,
-        "adaptiveSpendProfiles": {
-            "Groceries": {
-                "maximumChf": 180,
-                "typicalRange": "CHF 35–180",
-                "explanation": "Derived from the supplied card transaction history.",
-            },
-            "Transport": {
-                "maximumChf": 90,
-                "typicalRange": "CHF 12–90",
-                "explanation": "Derived from the supplied card transaction history.",
-            },
-            "Dining": {
-                "maximumChf": 140,
-                "typicalRange": "CHF 25–140",
-                "explanation": "Derived from the supplied card transaction history.",
-            },
-            "Shopping": {
-                "maximumChf": 250,
-                "typicalRange": "CHF 40–250",
-                "explanation": "Derived from the supplied card transaction history.",
-            },
-        },
-        "reviewTriggers": ["new_merchant"],
-        "assistantAuthority": "trusted",
-        "effectiveFrom": "2026-09-19T00:00:00.000Z",
-        "updatedAt": "2026-09-19T10:42:00.000Z",
-        "updatedBy": "customer",
-    }
+def default_wallet_policy_document(data_dir: Path | None = None) -> dict[str, Any]:
+    return build_wallet_policy_from_knowledge_graph(
+        data_dir or Path(__file__).resolve().parents[1] / "viseca-2026" / "data"
+    )
 
 
 def _validate_profiles(value: Any) -> dict[str, dict[str, Any]]:
@@ -136,6 +98,38 @@ def _validate_profiles(value: Any) -> dict[str, dict[str, Any]]:
             "explanation": explanation,
         }
     return profiles
+
+
+def _validate_knowledge_graph(value: Any) -> dict[str, Any]:
+    if not isinstance(value, Mapping) or set(value) != {
+        "graphVersion", "calculationVersion", "asOf", "evidenceIds", "categoryEvidence",
+    }:
+        raise PolicyValidationError("knowledgeGraph is invalid")
+    if not all(isinstance(value[field], str) and value[field] for field in (
+        "graphVersion", "calculationVersion", "asOf",
+    )):
+        raise PolicyValidationError("knowledgeGraph metadata is invalid")
+    evidence_ids = value["evidenceIds"]
+    category_evidence = value["categoryEvidence"]
+    if (
+        not isinstance(evidence_ids, list)
+        or not all(isinstance(evidence_id, str) and evidence_id for evidence_id in evidence_ids)
+        or not isinstance(category_evidence, Mapping)
+        or set(category_evidence) != set(SPEND_CATEGORIES)
+        or any(
+            not isinstance(ids, list)
+            or not all(isinstance(evidence_id, str) and evidence_id for evidence_id in ids)
+            for ids in category_evidence.values()
+        )
+    ):
+        raise PolicyValidationError("knowledgeGraph evidence is invalid")
+    return {
+        "graphVersion": value["graphVersion"],
+        "calculationVersion": value["calculationVersion"],
+        "asOf": value["asOf"],
+        "evidenceIds": list(evidence_ids),
+        "categoryEvidence": {category: list(category_evidence[category]) for category in SPEND_CATEGORIES},
+    }
 
 
 def validate_policy_patch(patch: Any) -> dict[str, Any]:
@@ -181,6 +175,80 @@ def validate_policy_patch(patch: Any) -> dict[str, Any]:
             raise PolicyValidationError("assistantAuthority is unsupported")
         validated["assistantAuthority"] = authority
     return validated
+
+
+def receipt_policy_rules(document: Mapping[str, Any]) -> list[dict[str, str]]:
+    """Build customer-facing rules from a validated, persisted policy document."""
+
+    try:
+        policy = validate_policy_patch({
+            key: document[key]
+            for key in (
+                "enabled", "dailySpendingLimitChf", "adaptiveSpendProfiles",
+                "reviewTriggers", "assistantAuthority",
+            )
+        })
+    except (KeyError, PolicyValidationError) as exc:
+        raise PolicyIntegrityError("policy cannot be displayed because it is invalid") from exc
+
+    def chf(value: float) -> str:
+        return f"CHF {value:.2f}"
+
+    rules = [{
+        "id": "daily-spending-limit",
+        "label": "Daily spending limit",
+        "detail": f"Up to {chf(policy['dailySpendingLimitChf'])} per day.",
+        "enforcement": "The purchase amount is added to today’s completed spending. Approval stops when that combined amount would exceed the daily limit.",
+    }]
+    for category in SPEND_CATEGORIES:
+        profile = policy["adaptiveSpendProfiles"][category]
+        rules.append({
+            "id": f"category-maximum-{category.lower()}",
+            "label": f"{category} maximum",
+            "detail": f"Up to {chf(profile['maximumChf'])} for this category.",
+            "enforcement": f"A {category.lower()} purchase above this maximum cannot be approved automatically.",
+        })
+
+    trigger_rules = {
+        "new_merchant": {
+            "label": "New merchant review",
+            "detail": "Ask before a first purchase with a merchant.",
+            "enforcement": "The assistant pauses for your confirmation when this card has no prior approved purchase with the merchant.",
+        },
+        "online_purchase": {
+            "label": "Online purchase review",
+            "detail": "Ask before a card-not-present purchase.",
+            "enforcement": "The assistant pauses for your confirmation when the purchase is online or recurring.",
+        },
+        "unusual_activity": {
+            "label": "Unusual activity review",
+            "detail": "Ask when spending does not match your usual pattern.",
+            "enforcement": "The assistant pauses for your confirmation after three recent attempts or from a device with no prior approved purchase on this card.",
+        },
+    }
+    for trigger in policy["reviewTriggers"]:
+        rules.append({"id": f"review-{trigger}", **trigger_rules[trigger]})
+
+    authority_rules = {
+        "review": {
+            "detail": "Ask for confirmation before approval.",
+            "enforcement": "The assistant cannot approve on its own. Each applicable purchase must be placed in front of you for a final decision.",
+        },
+        "trusted": {
+            "detail": "May approve familiar purchases within the confirmed limits.",
+            "enforcement": "The assistant can approve only after every active rule passes and the merchant already has an approved purchase history on this card.",
+        },
+        "autopilot": {
+            "detail": "May approve routine purchases within the confirmed limits.",
+            "enforcement": "The assistant can approve only after every active rule passes. Any failed or review rule overrides this authority.",
+        },
+    }
+    rules.append({
+        "id": "assistant-authority",
+        "label": "Assistant approval access",
+        **authority_rules[policy["assistantAuthority"]],
+    })
+    return rules
 
 
 class WalletPolicyStore:
@@ -236,7 +304,7 @@ def _validate_document(document: Any) -> dict[str, Any]:
         "dailySpendingLimitChf", "adaptiveSpendProfiles", "reviewTriggers",
         "assistantAuthority", "effectiveFrom", "updatedAt", "updatedBy",
     }
-    if set(document) != required:
+    if set(document) != required and set(document) != required | {"knowledgeGraph"}:
         raise PolicyValidationError("policy document fields are invalid")
     policy_id = document["policyId"]
     if not isinstance(policy_id, str) or not policy_id or len(policy_id) > 128:
@@ -261,7 +329,7 @@ def _validate_document(document: Any) -> dict[str, Any]:
             "reviewTriggers", "assistantAuthority",
         )
     })
-    return {
+    validated = {
         "policyId": policy_id,
         "schemaVersion": document["schemaVersion"],
         "revision": revision,
@@ -271,13 +339,24 @@ def _validate_document(document: Any) -> dict[str, Any]:
         "updatedAt": document["updatedAt"],
         "updatedBy": document["updatedBy"],
     }
+    if "knowledgeGraph" in document:
+        validated["knowledgeGraph"] = _validate_knowledge_graph(document["knowledgeGraph"])
+    return validated
 
 
 class SQLiteWalletPolicyStore:
     """Local durable policy store with validated documents and immutable revisions."""
 
-    def __init__(self, database_path: str | Path, initial: Mapping[str, Any] | None = None):
+    def __init__(
+        self,
+        database_path: str | Path,
+        initial: Mapping[str, Any] | None = None,
+        knowledge_graph_data_dir: Path | None = None,
+    ):
         self.database_path = Path(database_path)
+        self.knowledge_graph_data_dir = knowledge_graph_data_dir or (
+            Path(__file__).resolve().parents[1] / "viseca-2026" / "data"
+        )
         self._lock = RLock()
         self._prepare_path()
         self._connection = sqlite3.connect(
@@ -288,7 +367,8 @@ class SQLiteWalletPolicyStore:
         self._connection.execute("PRAGMA journal_mode = WAL")
         self._connection.execute("PRAGMA synchronous = FULL")
         self._create_schema()
-        self._seed(initial or default_wallet_policy_document())
+        self._migrate_legacy_default_policy()
+        self._seed(initial or default_wallet_policy_document(self.knowledge_graph_data_dir))
         self._seed_scenario_policies()
         self._lock_database_files()
 
@@ -408,6 +488,50 @@ class SQLiteWalletPolicyStore:
             count = self._connection.execute("SELECT COUNT(*) FROM policies").fetchone()[0]
             if count == 0:
                 self.create(document)
+
+    def _migrate_legacy_default_policy(self) -> None:
+        with self._lock:
+            row = self._connection.execute(
+                "SELECT * FROM policies WHERE policy_id = ?",
+                ("wallet-policy_CA0001_default",),
+            ).fetchone()
+            if (
+                row is None
+                or row["card_id"] != "CA0001"
+                or row["revision"] != 1
+                or row["updated_by"] != "policy-api"
+            ):
+                return
+            try:
+                document = _validate_document(json.loads(row["document_json"]))
+            except (TypeError, json.JSONDecodeError, PolicyValidationError):
+                return
+            if (
+                "knowledgeGraph" in document
+                or _document_digest(document) != row["document_digest"]
+                or document["policyId"] != row["policy_id"]
+                or document["revision"] != row["revision"]
+                or document["subject"]["cardId"] != row["card_id"]
+            ):
+                return
+            migrated = default_wallet_policy_document(self.knowledge_graph_data_dir)
+            serialized = _canonical_document(migrated)
+            digest = _document_digest(migrated)
+            try:
+                self._connection.execute("BEGIN IMMEDIATE")
+                self._connection.execute(
+                    "UPDATE policies SET document_json = ?, document_digest = ?, updated_at = ?, updated_by = ? WHERE policy_id = ? AND revision = 1",
+                    (serialized, digest, migrated["updatedAt"], migrated["updatedBy"], migrated["policyId"]),
+                )
+                self._connection.execute(
+                    "UPDATE policy_revisions SET document_json = ?, document_digest = ?, previous_digest = NULL, changed_at = ?, changed_by = ? WHERE policy_id = ? AND revision = 1",
+                    (serialized, digest, migrated["updatedAt"], migrated["updatedBy"], migrated["policyId"]),
+                )
+                self._connection.execute("COMMIT")
+            except Exception:
+                self._connection.execute("ROLLBACK")
+                raise
+            self._lock_database_files()
 
     def _seed_scenario_policies(self) -> None:
         for document in benchmark_policy_documents():
@@ -1027,6 +1151,15 @@ class SQLiteWalletPolicyStore:
                 raise
             self._lock_database_files()
         return deepcopy(stored)
+
+    def create_from_knowledge_graph(self, card_id: str) -> dict[str, Any]:
+        if not isinstance(card_id, str) or not card_id:
+            raise PolicyValidationError("cardId is invalid")
+        return self.create(build_wallet_policy_from_knowledge_graph(
+            self.knowledge_graph_data_dir,
+            card_id=card_id,
+            policy_id=f"wallet-policy_{card_id}_graph",
+        ))
 
     def update(self, request: Any) -> dict[str, Any]:
         if not isinstance(request, Mapping):

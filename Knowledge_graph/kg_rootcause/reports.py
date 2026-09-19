@@ -12,7 +12,7 @@ from .reporting.declines import export
 def build_reports(data_dir, build_dir, *, rebuild=False):
     """Reproduce local reports using only code and dependencies in this repository."""
     build_dir.mkdir(parents=True, exist_ok=True)
-    required = ['source_graph.json', 'precomputed_evidence.json', 'simulation_results.json']
+    required = ['source_graph.json', 'precomputed_evidence.json', 'policy_recommendations.json', 'simulation_results.json']
     if rebuild or any(not (build_dir / name).exists() for name in required):
         subprocess.run(
             [sys.executable, '-m', 'kg_rootcause', '--data', str(data_dir), '--output', str(build_dir)],
@@ -30,6 +30,7 @@ def build_reports(data_dir, build_dir, *, rebuild=False):
             'precomputed-knowledge-graph.html': ['kg_rootcause/frontend_contract/explorer.py', 'kg_rootcause/frontend_contract/assets/explorer.js', 'kg_rootcause/frontend_contract/assets/explorer.css', 'kg_rootcause/frontend_contract/assets/standalone.css', 'kg_rootcause/frontend_contract/templates/knowledge_explorer.html', 'kg_rootcause/reporting/html.py'],
             'tr03359-reason-review.html': ['Same graph renderer; focus authorization TR03359'],
             'decline_audit/decline_smoke_report.html': ['kg_rootcause/audit/factors.py', 'kg_rootcause/audit/tracing.py', 'kg_rootcause/audit/runner.py', 'kg_rootcause/reporting/declines.py'],
+            'policy_recommendations.json': ['kg_rootcause/recommendations.py', 'historical_evidence_index.json'],
         },
         'review_pages_tracked_in_git': True,
         'large_intermediate_graph_files_git_ignored': False,

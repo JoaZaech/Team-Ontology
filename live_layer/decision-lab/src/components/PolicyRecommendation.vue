@@ -1,15 +1,8 @@
 <script setup lang="ts">
-export type PolicyRecommendation = {
-  id: string;
-  name: string;
-  description: string;
-  category: "Spending" | "Security" | "Cards" | "Notifications";
-  rule: string;
-  signals: Array<{ value: string; label: string }>;
-};
+import type { PolicyRecommendation } from "../types";
 
 defineProps<{ recommendation: PolicyRecommendation }>();
-const emit = defineEmits<{ add: [recommendation: PolicyRecommendation]; dismiss: [recommendationId: string] }>();
+const emit = defineEmits<{ apply: [recommendation: PolicyRecommendation]; dismiss: [recommendationId: string] }>();
 </script>
 
 <template>
@@ -29,10 +22,10 @@ const emit = defineEmits<{ add: [recommendation: PolicyRecommendation]; dismiss:
       </div>
     </div>
     <div class="policy-recommendation__actions">
-      <p>Draft only — based on approved activity and familiar merchant relationships.</p>
+      <p>Draft only — based on approved purchase evidence. Past declines are context, not inferred preferences.</p>
       <div>
-        <button type="button" class="policy-recommendation__dismiss" @click="emit('dismiss', recommendation.id)">Not now</button>
-        <button type="button" class="policy-recommendation__add" @click="emit('add', recommendation)">Add policy</button>
+        <button type="button" class="policy-recommendation__dismiss" @click="emit('dismiss', recommendation.recommendation_id)">Not now</button>
+        <button type="button" class="policy-recommendation__add" @click="emit('apply', recommendation)">Apply recommendation</button>
       </div>
     </div>
   </section>

@@ -4,6 +4,7 @@ import visecaLogo from "./assets/viseca-logo.svg";
 import PolicyControls from "./components/PolicyControls.vue";
 import ReadyWorkflow from "./components/ReadyWorkflow.vue";
 import CardManagement from "./components/CardManagement.vue";
+import ActivityView from "./components/ActivityView.vue";
 
 type ResearchCall = {
   tool: string;
@@ -13,7 +14,7 @@ type ResearchCall = {
 };
 
 const landingStage = ref<"loading" | "blank">("loading");
-const screen = ref<"workflow" | "settings" | "cards">("workflow");
+const screen = ref<"workflow" | "settings" | "cards" | "activity">("workflow");
 const loadMessage = ref("Agent simulation is retrieving purchase and policy context.");
 const researchCalls = ref<ResearchCall[]>([
   { tool: "purchase.get_request", input: "authorization_id: MOCK_AU0001", result: "Purchase request found · CHF 20.00", state: "running" },
@@ -25,10 +26,18 @@ let landingTimer: ReturnType<typeof setTimeout> | undefined;
 let messageTimer: ReturnType<typeof setTimeout> | undefined;
 const researchTimers: Array<ReturnType<typeof setTimeout>> = [];
 
+function destinationFromHash(): "workflow" | "settings" | "cards" | "activity" {
+  const destination = window.location.hash.slice(1);
+  return destination === "cards" || destination === "settings" || destination === "activity" ? destination : "workflow";
+}
+
+function syncScreenFromHash(): void {
+  screen.value = destinationFromHash();
+}
+
 function showBlankDestination(): void {
   landingStage.value = "blank";
-  const destination = window.location.hash.slice(1);
-  screen.value = destination === "cards" || destination === "settings" ? destination : "workflow";
+  syncScreenFromHash();
   window.history.replaceState({}, "", `#${screen.value}`);
 }
 
@@ -42,12 +51,18 @@ function openCards(): void {
   window.history.replaceState({}, "", "#cards");
 }
 
+function openActivity(): void {
+  screen.value = "activity";
+  window.history.replaceState({}, "", "#activity");
+}
+
 function openWorkflow(): void {
   screen.value = "workflow";
   window.history.replaceState({}, "", "#workflow");
 }
 
 onMounted(() => {
+  window.addEventListener("hashchange", syncScreenFromHash);
   const loadDuration = 1500;
   messageTimer = setTimeout(() => {
     loadMessage.value = "Retrieval complete. Preparing the rulebook checks.";
@@ -62,6 +77,7 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  window.removeEventListener("hashchange", syncScreenFromHash);
   if (landingTimer) clearTimeout(landingTimer);
   if (messageTimer) clearTimeout(messageTimer);
   researchTimers.forEach(clearTimeout);
@@ -102,6 +118,7 @@ onBeforeUnmount(() => {
   </main>
 
   <ReadyWorkflow v-else-if="screen === 'workflow'" @open-settings="openSettings" />
-  <PolicyControls v-else-if="screen === 'settings'" @open-workflow="openWorkflow" @open-cards="openCards" />
-  <CardManagement v-else @open-workflow="openWorkflow" @open-settings="openSettings" />
+  <PolicyControls v-else-if="screen === 'settings'" @open-workflow="openWorkflow" @open-cards="openCards" @open-activity="openActivity" />
+  <CardManagement v-else-if="screen === 'cards'" @open-workflow="openWorkflow" @open-settings="openSettings" @open-activity="openActivity" />
+  <ActivityView v-else @open-workflow="openWorkflow" @open-settings="openSettings" @open-cards="openCards" />
 </template>

@@ -1,8 +1,11 @@
 import json
 import re
 import unittest
+from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
+from tempfile import TemporaryDirectory
+from unittest.mock import Mock
 
 from rule_client import RuleServiceClient
 from rule_service_fixture import running_rule_service
@@ -69,6 +72,11 @@ class VisecaMockTests(unittest.TestCase):
              "currency": "CHF", "scope": "purchase"},
         )
         self.assertEqual(envelope["data"]["applied_policies"]["wallet_policy"]["daily_spending_limit_chf"], 1500)
+        daily_rule = next(
+            rule for rule in envelope["data"]["applied_policies"]["wallet_policy"]["rules"]
+            if rule["id"] == "daily-spending-limit"
+        )
+        self.assertEqual(daily_rule["detail"], "Up to CHF 1500.00 per day.")
         self.assertEqual(state.evaluate()["recommended_decision"], "approve")
         self.assertIsNone(state.next_request())
         body = {"authorization_id": MOCK_AUTHORIZATION_ID, "decision": "approve",
@@ -89,7 +97,12 @@ class VisecaMockTests(unittest.TestCase):
             "expectedRevision": policy["revision"],
             "patch": {"dailySpendingLimitChf": 10},
         })
-        state.next_request()
+        envelope = state.next_request()
+        daily_rule = next(
+            rule for rule in envelope["data"]["applied_policies"]["wallet_policy"]["rules"]
+            if rule["id"] == "daily-spending-limit"
+        )
+        self.assertEqual(daily_rule["detail"], "Up to CHF 10.00 per day.")
         evaluation = state.evaluate()
         self.assertEqual(evaluation["recommended_decision"], "decline")
         with self.assertRaisesRegex(ValueError, "decision_does_not_match_policy"):
@@ -133,6 +146,67 @@ class VisecaMockTests(unittest.TestCase):
             "decision": "approve",
         })
         self.assertEqual(resolved["status"], "resolved")
+
+    def test_activity_projection_records_agent_proposal_and_final_resolution(self):
+        state = self.make_state()
+        try:
+            policy = state.rule_client.get_policy()
+            state.rule_client.update_policy({
+                "policyId": policy["policyId"],
+                "expectedRevision": policy["revision"],
+                "patch": {"dailySpendingLimitChf": 1500, "reviewTriggers": ["online_purchase"]},
+            })
+            state.next_request()
+            evaluation = state.evaluate()
+            self.assertEqual(evaluation["recommended_decision"], "step_up")
+            state.record_decision(MOCK_AUTHORIZATION_ID, {
+                "authorization_id": MOCK_AUTHORIZATION_ID,
+                "decision": "step_up",
+                "reason_codes": evaluation["reason_codes"],
+            })
+            state.resolve_decision(MOCK_AUTHORIZATION_ID, {
+                "authorization_id": MOCK_AUTHORIZATION_ID,
+                "decision": "approve",
+            })
+
+            snapshot = state.activity_snapshot()
+            self.assertFalse(snapshot["processing"])
+            self.assertEqual(len(snapshot["transactions"]), 1)
+            transaction = snapshot["transactions"][0]
+            self.assertEqual(transaction["proposal_summary"], "Grocery delivery order")
+            self.assertEqual(transaction["agent_decision"], "step_up")
+            self.assertEqual(transaction["final_decision"], "approve")
+            self.assertEqual(transaction["status"], "approved")
+        finally:
+            state.close()
+
+    def test_precomputed_recommendations_are_hidden_after_matching_policy_is_saved(self):
+        recommendation = {
+            "recommendation_id": "category-maximum-groceries",
+            "profile_category": "Groceries",
+            "profile": {
+                "maximumChf": 130.0,
+                "typicalRange": "CHF 60.00-CHF 129.00",
+                "explanation": "Based on approved graph evidence.",
+            },
+        }
+        with TemporaryDirectory() as directory:
+            path = Path(directory) / "policy_recommendations.json"
+            path.write_text(json.dumps({
+                "recommendation_version": "policy-recommendation-v1",
+                "generated_from": {"artifact": "historical_evidence_index.json"},
+                "by_card": {"CA0001": [recommendation]},
+            }))
+            policy = {
+                "subject": {"customerId": "CU0001", "cardId": "CA0001"},
+                "adaptiveSpendProfiles": {"Groceries": {"maximumChf": 180.0}},
+            }
+            rule_client = Mock()
+            rule_client.get_policy.side_effect = lambda: deepcopy(policy)
+            state = MockVisecaState(rule_client=rule_client, policy_recommendations_path=path)
+            self.assertEqual(state.policy_recommendations()["recommendations"], [recommendation])
+            policy["adaptiveSpendProfiles"]["Groceries"] = recommendation["profile"]
+            self.assertEqual(state.policy_recommendations()["recommendations"], [])
 
     def test_root_page_serves_the_built_decision_lab_app(self):
         # The built UI is served by this mock and calls its request, evaluation,

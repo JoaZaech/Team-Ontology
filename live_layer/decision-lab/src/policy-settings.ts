@@ -37,7 +37,7 @@ export interface DynamicWalletPolicy {
   assistantAuthority: AssistantAuthority;
   effectiveFrom: string;
   updatedAt: string;
-  updatedBy: "customer" | "system";
+  updatedBy: "customer" | "system" | "knowledge-graph";
 }
 
 export type DynamicWalletPolicyPatch = Pick<
@@ -52,7 +52,7 @@ export interface PolicyUpdateRequest {
 }
 
 export interface PolicyRepository {
-  getDynamicWalletPolicy(subject: DynamicWalletPolicy["subject"]): Promise<DynamicWalletPolicy>;
+  getDynamicWalletPolicy(): Promise<DynamicWalletPolicy>;
   updateDynamicWalletPolicy(request: PolicyUpdateRequest): Promise<DynamicWalletPolicy>;
 }
 
@@ -63,75 +63,6 @@ export class PolicyConflictError extends Error {
   }
 }
 
-const defaultProfiles: Record<SpendCategory, AdaptiveSpendProfile> = {
-  Groceries: { maximumChf: 180, typicalRange: "CHF 35–180", explanation: "Your recent grocery purchases are usually within this range, and this leaves room in today’s daily budget." },
-  Transport: { maximumChf: 90, typicalRange: "CHF 12–90", explanation: "This reflects your typical local transport and fuel spending, while retaining a buffer in today’s daily budget." },
-  Dining: { maximumChf: 140, typicalRange: "CHF 25–140", explanation: "This matches your usual restaurant and takeaway amounts, with a buffer for an occasional higher bill." },
-  Shopping: { maximumChf: 250, typicalRange: "CHF 40–250", explanation: "This is based on your recent retail spending and stays below the amount that would be unusual for this category." },
-};
-
-export function createPreviewPolicy(): DynamicWalletPolicy {
-  return {
-    policyId: "wallet-policy_CA0001_default",
-    schemaVersion: "2026-09-01",
-    revision: 1,
-    subject: { customerId: "CU0001", cardId: "CA0001" },
-    enabled: true,
-    dailySpendingLimitChf: 1500,
-    adaptiveSpendProfiles: defaultProfiles,
-    reviewTriggers: ["new_merchant"],
-    assistantAuthority: "trusted",
-    effectiveFrom: "2026-09-19T00:00:00.000Z",
-    updatedAt: "2026-09-19T10:42:00.000Z",
-    updatedBy: "customer",
-  };
-}
-
-function clone<T>(value: T): T {
-  return structuredClone(value);
-}
-
-function validatePatch(patch: PolicyUpdateRequest["patch"]): void {
-  if (patch.dailySpendingLimitChf !== undefined && (!Number.isFinite(patch.dailySpendingLimitChf) || patch.dailySpendingLimitChf < 0)) {
-    throw new Error("The daily spending limit must be a non-negative number.");
-  }
-  if (patch.reviewTriggers && patch.reviewTriggers.some((trigger) => !REVIEW_TRIGGERS.includes(trigger))) {
-    throw new Error("The policy contains an unsupported review trigger.");
-  }
-  if (patch.assistantAuthority && !ASSISTANT_AUTHORITIES.includes(patch.assistantAuthority)) {
-    throw new Error("The policy contains an unsupported approval authority.");
-  }
-}
-
-/**
- * In-memory implementation retained for isolated component development. The
- * running decision lab uses ``createLivePolicyRepository`` below instead.
- */
-export function createPreviewPolicyRepository(initial = createPreviewPolicy()): PolicyRepository {
-  let stored = clone(initial);
-  return {
-    async getDynamicWalletPolicy(subject) {
-      if (subject.customerId !== stored.subject.customerId || subject.cardId !== stored.subject.cardId) {
-        throw new Error("Policy not found for the requested card.");
-      }
-      return clone(stored);
-    },
-    async updateDynamicWalletPolicy(request) {
-      validatePatch(request.patch);
-      if (request.policyId !== stored.policyId) throw new Error("Policy not found.");
-      if (request.expectedRevision !== stored.revision) throw new PolicyConflictError();
-      stored = {
-        ...stored,
-        ...clone(request.patch),
-        revision: stored.revision + 1,
-        updatedAt: new Date().toISOString(),
-        updatedBy: "customer",
-      };
-      return clone(stored);
-    },
-  };
-}
-
 /**
  * Adapter for the local decision service. The service validates, versions, and
  * supplies the exact snapshot used by the deterministic rulebook; the browser
@@ -139,12 +70,8 @@ export function createPreviewPolicyRepository(initial = createPreviewPolicy()): 
  */
 export function createLivePolicyRepository(): PolicyRepository {
   return {
-    async getDynamicWalletPolicy(subject) {
-      const policy = await getWalletPolicy();
-      if (policy.subject.customerId !== subject.customerId || policy.subject.cardId !== subject.cardId) {
-        throw new Error("Policy not found for the requested card.");
-      }
-      return policy;
+    async getDynamicWalletPolicy() {
+      return getWalletPolicy();
     },
     async updateDynamicWalletPolicy(request) {
       try {

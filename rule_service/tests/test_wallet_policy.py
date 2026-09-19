@@ -169,6 +169,37 @@ class WalletPolicyTests(unittest.TestCase):
                 store.create(policy)
             store.close()
 
+    def test_sqlite_store_persists_graph_derived_policy_provenance(self):
+        with TemporaryDirectory() as directory:
+            database_path = Path(directory) / "rules.sqlite3"
+            store = SQLiteWalletPolicyStore(database_path)
+            policy = store.get()
+            self.assertEqual(policy["updatedBy"], "policy-api")
+            self.assertEqual(policy["knowledgeGraph"]["graphVersion"], "kg-v1")
+            self.assertTrue(policy["knowledgeGraph"]["evidenceIds"])
+            store.close()
+
+            reopened = SQLiteWalletPolicyStore(database_path)
+            persisted = reopened.get()
+            self.assertEqual(persisted["knowledgeGraph"], policy["knowledgeGraph"])
+            generated = reopened.create_from_knowledge_graph("CA0002")
+            self.assertEqual(generated["subject"]["cardId"], "CA0002")
+            self.assertEqual(generated["knowledgeGraph"]["graphVersion"], "kg-v1")
+            reopened.close()
+
+    def test_sqlite_store_migrates_only_the_untouched_legacy_default(self):
+        with TemporaryDirectory() as directory:
+            database_path = Path(directory) / "rules.sqlite3"
+            legacy = default_wallet_policy_document()
+            legacy.pop("knowledgeGraph")
+            store = SQLiteWalletPolicyStore(database_path, initial=legacy)
+            self.assertNotIn("knowledgeGraph", store.get())
+            store.close()
+
+            migrated = SQLiteWalletPolicyStore(database_path)
+            self.assertEqual(migrated.get()["knowledgeGraph"]["graphVersion"], "kg-v1")
+            migrated.close()
+
 
 if __name__ == "__main__":
     unittest.main()

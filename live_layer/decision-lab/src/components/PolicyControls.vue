@@ -2,15 +2,16 @@
 import { computed, onMounted, ref } from "vue";
 import visecaLogo from "../assets/viseca-logo.svg";
 import DynamicWalletPolicy from "./DynamicWalletPolicy.vue";
-import PolicyRecommendationCard, { type PolicyRecommendation as PolicyRecommendationDraft } from "./PolicyRecommendation.vue";
+import PolicyRecommendationCard from "./PolicyRecommendation.vue";
 import {
-  createPreviewPolicy,
   createLivePolicyRepository,
   type DynamicWalletPolicy as DynamicWalletPolicyDocument,
   type DynamicWalletPolicyPatch,
 } from "../policy-settings";
+import { getPolicyRecommendations } from "../api";
+import type { PolicyRecommendation } from "../types";
 
-const emit = defineEmits<{ openWorkflow: []; openCards: [] }>();
+const emit = defineEmits<{ openWorkflow: []; openCards: []; openActivity: [] }>();
 
 type Policy = {
   id: number;
@@ -34,25 +35,13 @@ const selectedCategory = ref<"All" | Policy["category"]>("All");
 const search = ref("");
 const showOnlyActive = ref(false);
 const lastAction = ref("");
-const initialDynamicPolicy = createPreviewPolicy();
-const dynamicPolicy = ref<DynamicWalletPolicyDocument>(initialDynamicPolicy);
+const dynamicPolicy = ref<DynamicWalletPolicyDocument>();
 const policySaving = ref(false);
 const policyError = ref("");
 const recommendationFeedback = ref("");
 const policyRepository = createLivePolicyRepository();
 const categories: Array<"All" | Policy["category"]> = ["All", "Spending", "Security", "Cards", "Notifications"];
-const policyRecommendation = ref<PolicyRecommendationDraft | null>({
-  id: "recurring-payment-review",
-  name: "Recurring payment review",
-  description: "Check a new recurring card payment or a renewal that changes from its usual amount.",
-  category: "Security",
-  rule: "Ask before a new recurring payment starts or an existing renewal is 20% higher than usual.",
-  signals: [
-    { value: "2", label: "recurring merchants" },
-    { value: "CHF 25.15", label: "typical monthly total" },
-    { value: "Approved", label: "wallet activity only" },
-  ],
-});
+const policyRecommendations = ref<PolicyRecommendation[]>([]);
 
 const filteredPolicies = computed(() => {
   const query = search.value.trim().toLowerCase();
@@ -62,7 +51,7 @@ const filteredPolicies = computed(() => {
     return matchesCategory && matchesSearch && (!showOnlyActive.value || policy.enabled);
   });
 });
-const activeCount = computed(() => policies.value.filter((policy) => policy.enabled).length + Number(dynamicPolicy.value.enabled));
+const activeCount = computed(() => policies.value.filter((policy) => policy.enabled).length + Number(dynamicPolicy.value?.enabled));
 
 function togglePolicy(policy: Policy): void {
   recommendationFeedback.value = "";
@@ -71,25 +60,10 @@ function togglePolicy(policy: Policy): void {
   lastAction.value = `${policy.name} ${policy.enabled ? "enabled" : "disabled"}`;
 }
 
-function addRecommendedPolicy(recommendation: PolicyRecommendationDraft): void {
-  if (!policies.value.some((policy) => policy.name === recommendation.name)) {
-    policies.value.unshift({
-      id: Math.max(0, ...policies.value.map((policy) => policy.id)) + 1,
-      name: recommendation.name,
-      description: recommendation.description,
-      category: recommendation.category,
-      enabled: true,
-      updated: "Added just now",
-      icon: "shield",
-    });
-  }
-  policyRecommendation.value = null;
-  recommendationFeedback.value = `${recommendation.name} was added and enabled.`;
-}
-
 function dismissRecommendedPolicy(recommendationId: string): void {
-  if (policyRecommendation.value?.id !== recommendationId) return;
-  policyRecommendation.value = null;
+  policyRecommendations.value = policyRecommendations.value.filter(
+    (recommendation) => recommendation.recommendation_id !== recommendationId,
+  );
   recommendationFeedback.value = "Recommendation hidden. Your current policies have not changed.";
 }
 
@@ -97,7 +71,12 @@ async function loadDynamicPolicy(): Promise<void> {
   policySaving.value = true;
   policyError.value = "";
   try {
-    dynamicPolicy.value = await policyRepository.getDynamicWalletPolicy(initialDynamicPolicy.subject);
+    dynamicPolicy.value = await policyRepository.getDynamicWalletPolicy();
+    try {
+      policyRecommendations.value = (await getPolicyRecommendations()).recommendations;
+    } catch {
+      policyRecommendations.value = [];
+    }
   } catch (error) {
     policyError.value = error instanceof Error
       ? error.message
@@ -107,8 +86,35 @@ async function loadDynamicPolicy(): Promise<void> {
   }
 }
 
+async function applyRecommendedPolicy(recommendation: PolicyRecommendation): Promise<void> {
+  if (policySaving.value || !dynamicPolicy.value) return;
+  recommendationFeedback.value = "";
+  policySaving.value = true;
+  policyError.value = "";
+  try {
+    const adaptiveSpendProfiles = {
+      ...dynamicPolicy.value.adaptiveSpendProfiles,
+      [recommendation.profile_category]: recommendation.profile,
+    };
+    dynamicPolicy.value = await policyRepository.updateDynamicWalletPolicy({
+      policyId: dynamicPolicy.value.policyId,
+      expectedRevision: dynamicPolicy.value.revision,
+      patch: { adaptiveSpendProfiles },
+    });
+    policyRecommendations.value = policyRecommendations.value.filter(
+      (item) => item.recommendation_id !== recommendation.recommendation_id,
+    );
+    lastAction.value = `${recommendation.name} is now enforced by the rule engine.`;
+    recommendationFeedback.value = `${recommendation.name} was applied to your versioned wallet policy.`;
+  } catch (error) {
+    policyError.value = error instanceof Error ? error.message : "Unable to apply the recommendation.";
+  } finally {
+    policySaving.value = false;
+  }
+}
+
 async function updateDynamicPolicy(patch: Partial<DynamicWalletPolicyPatch>): Promise<void> {
-  if (policySaving.value) return;
+  if (policySaving.value || !dynamicPolicy.value) return;
   recommendationFeedback.value = "";
   policySaving.value = true;
   policyError.value = "";
@@ -149,14 +155,14 @@ function iconPath(icon: Policy["icon"]): string {
     <div class="policy-shell">
       <aside class="policy-sidebar" aria-label="Main navigation">
         <p class="policy-sidebar__label">CARD MANAGEMENT</p>
-        <nav><a href="#" class="policy-nav-link">Overview</a><a href="#" class="policy-nav-link policy-nav-link--active" aria-current="page">Wallet policies</a><button type="button" class="policy-nav-link" @click="emit('openCards')">Cards</button><a href="#" class="policy-nav-link">Activity</a></nav>
+        <nav><a href="#" class="policy-nav-link">Overview</a><a href="#" class="policy-nav-link policy-nav-link--active" aria-current="page">Wallet policies</a><button type="button" class="policy-nav-link" @click="emit('openCards')">Cards</button><button type="button" class="policy-nav-link" @click="emit('openActivity')">Activity</button></nav>
         <a href="#" class="policy-nav-link policy-nav-link--bottom">Settings</a>
       </aside>
       <section class="policy-workspace">
         <div class="policy-breadcrumb"><span>Settings</span><i>/</i> Wallet policies</div>
         <div class="policy-heading"><div><p class="policy-eyebrow">YOUR CARD, YOUR RULES</p><h1>Wallet policies</h1><p class="policy-intro">Choose the rules that help keep your card use simple and secure.</p></div><div class="policy-summary" aria-label="Number of active policies"><span>{{ activeCount }}</span><p>active<br />policies</p></div></div>
         <section class="policy-notice" aria-label="Policy information"><div class="policy-notice__icon">i</div><p>These settings are versioned by the local decision service and applied to the next incoming purchase request alongside the confirmed mandate.</p></section>
-        <DynamicWalletPolicy :policy="dynamicPolicy" :saving="policySaving" @change="updateDynamicPolicy" />
+        <DynamicWalletPolicy v-if="dynamicPolicy" :policy="dynamicPolicy" :saving="policySaving" @change="updateDynamicPolicy" />
         <p v-if="policyError" class="policy-error" role="alert">{{ policyError }}</p>
         <div class="policy-controls">
           <div class="policy-tabs" role="tablist" aria-label="Policy categories"><button v-for="category in categories" :key="category" type="button" :class="['policy-tab', { 'policy-tab--active': selectedCategory === category }]" :aria-selected="selectedCategory === category" @click="selectedCategory = category">{{ category }}</button></div>
@@ -171,7 +177,7 @@ function iconPath(icon: Policy["icon"]): string {
           </article>
         </div>
         <div v-if="filteredPolicies.length === 0" class="policy-empty"><p>No policies match your filters.</p><button type="button" @click="search = ''; selectedCategory = 'All'; showOnlyActive = false">Clear filters</button></div>
-        <PolicyRecommendationCard v-if="policyRecommendation" :recommendation="policyRecommendation" @add="addRecommendedPolicy" @dismiss="dismissRecommendedPolicy" />
+        <PolicyRecommendationCard v-for="recommendation in policyRecommendations" :key="recommendation.recommendation_id" :recommendation="recommendation" @apply="applyRecommendedPolicy" @dismiss="dismissRecommendedPolicy" />
         <p v-if="recommendationFeedback" class="policy-recommendation-feedback" role="status">{{ recommendationFeedback }}</p>
       </section>
     </div>

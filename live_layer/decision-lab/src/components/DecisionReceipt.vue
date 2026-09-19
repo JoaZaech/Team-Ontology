@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import type { Check, DecisionEnvelope, EvaluationResult } from "../types";
+import type { Check, DecisionEnvelope, EvaluationResult, ReceiptPolicyRule } from "../types";
 
 type ReceiptStage = "request" | "analysis" | "combine" | "approved" | "declined" | "review" | "error";
 type TraceId = "request" | "policy" | "context" | "decision";
@@ -27,6 +27,7 @@ const emit = defineEmits<{
 }>();
 
 const activeTrace = ref<TraceId>("request");
+const activePolicyRule = ref<string | null>(null);
 
 const authorization = computed(() => props.purchase?.data.authorization ?? null);
 const mandate = computed(() => props.purchase?.data.mandate ?? null);
@@ -38,54 +39,14 @@ const reviewChecks = computed(() => props.evaluation?.checks.filter((check) => c
 const policyChecks = computed(() => props.evaluation?.checks.filter((check) => isPolicyCheck(check)) ?? []);
 const contextChecks = computed(() => props.evaluation?.checks.filter((check) => !isPolicyCheck(check)) ?? []);
 
-const appliedPolicyRules = computed(() => {
-  const policies = appliedPolicies.value;
-  if (!policies) return [];
-
-  const rules = [
-    {
-      label: "Confirmed instruction",
-      detail: policies.confirmed_mandate.instruction,
-    },
-    ...policies.confirmed_mandate.hard_rules.map((rule) => ({
-      label: "Mandate limit",
-      detail: formatMandateRule(rule),
-    })),
-    {
-      label: "Daily spending limit",
-      detail: `Up to ${formatChf(policies.wallet_policy.daily_spending_limit_chf)} per day.`,
-    },
-  ];
-
-  const requestedCategories = new Set(proposal.value?.items.map((item) => item.item_category.toLowerCase()) ?? []);
-  for (const [category, profile] of Object.entries(policies.wallet_policy.adaptive_spend_profiles)) {
-    if (requestedCategories.has(category.toLowerCase())) {
-      rules.push({
-        label: `${category} maximum`,
-        detail: `Up to ${formatChf(profile.maximumChf)} for this category.`,
-      });
-    }
-  }
-
-  if (policies.wallet_policy.review_triggers.length) {
-    rules.push({
-      label: "Review trigger",
-      detail: policies.wallet_policy.review_triggers.map(readableReviewTrigger).join(", "),
-    });
-  }
-  rules.push({
-    label: "Assistant authority",
-    detail: readableAuthority(policies.wallet_policy.assistant_authority),
-  });
-  return rules;
-});
+const appliedPolicyRules = computed<ReceiptPolicyRule[]>(() => appliedPolicies.value?.wallet_policy.rules ?? []);
 
 const status = computed(() => {
   if (props.stage === "approved") {
     return {
       tone: "approved",
       kicker: props.approvedByCustomer ? "APPROVED BY YOU" : "AUTOMATICALLY APPROVED",
-      title: props.approvedByCustomer ? "Approved. You confirmed this purchase." : "Approved. Ready to continue.",
+      title: "Transaction successful.",
       summary: props.approvedByCustomer
         ? "You approved this purchase after the automated process paused for your review."
         : "This order follows your saved wallet policy and its purchase context looks normal.",
@@ -104,8 +65,8 @@ const status = computed(() => {
   if (props.stage === "review") {
     return {
       tone: "review",
-      kicker: "YOUR APPROVAL IS NEEDED",
-      title: "This purchase is paused for you.",
+      kicker: "HUMAN INTERVENTION IS NEEDED",
+      title: "This purchase is paused for review.",
       summary: "One fact needs confirmation. The system has not made a payment decision on your behalf.",
     };
   }
@@ -270,7 +231,13 @@ watch(
   () => props.stage,
   (stage) => {
     if (stage === "analysis") activeTrace.value = "policy";
-    if (["approved", "declined", "review", "error"].includes(stage)) activeTrace.value = "decision";
+    if (stage === "declined") {
+      const failedRule = failedChecks.value.map(policyRuleFor).find(Boolean);
+      activeTrace.value = failedRule ? "policy" : "decision";
+      activePolicyRule.value = failedRule?.id ?? null;
+    } else if (["approved", "review", "error"].includes(stage)) {
+      activeTrace.value = "decision";
+    }
   },
 );
 
@@ -380,34 +347,25 @@ function formatChf(value: number): string {
   return `CHF ${value.toFixed(2)}`;
 }
 
-function formatMandateRule(rule: { field: string; operator: string; value: number | string | boolean; currency?: string }): string {
-  const subject = rule.field === "authorization.billing_amount_chf" ? "Purchase total" : rule.field;
-  const amount = typeof rule.value === "number" && rule.currency ? `${rule.currency} ${rule.value.toFixed(2)}` : String(rule.value);
-  return `${subject} ${rule.operator} ${amount}.`;
+function togglePolicyRule(ruleId: string): void {
+  activePolicyRule.value = activePolicyRule.value === ruleId ? null : ruleId;
 }
 
-function readableReviewTrigger(trigger: string): string {
-  const names: Record<string, string> = {
-    new_merchant: "First purchase with a merchant",
-    online_purchase: "Online purchase",
-    unusual_activity: "Unusual activity",
-  };
-  return names[trigger] ?? trigger;
-}
+function policyRuleFor(check: Check): ReceiptPolicyRule | null {
+  if (check.outcome !== "pass") return null;
 
-function readableAuthority(authority: string): string {
-  const names: Record<string, string> = {
-    review: "Ask for confirmation before approval.",
-    trusted: "May approve within the confirmed limits.",
-    autopilot: "May approve routine purchases within the confirmed limits.",
-  };
-  return names[authority] ?? authority;
+  if (check.name === "Category maximum") {
+    const category = authorization.value?.merchant.merchant_category.toLowerCase();
+    return appliedPolicyRules.value.find((rule) => rule.label.toLowerCase() === `${category} maximum`) ?? null;
+  }
+
+  return appliedPolicyRules.value.find((rule) => rule.label === check.name) ?? null;
 }
 </script>
 
 <template>
   <section class="decision-receipt" :class="`decision-receipt--${status.tone}`" aria-labelledby="decision-receipt-title">
-    <header class="decision-receipt__hero">
+  <header class="decision-receipt__hero">
       <div class="decision-receipt__outcome" aria-live="polite" aria-atomic="true">
         <span class="decision-receipt__mark" aria-hidden="true">{{ stateIcon(trace.find((item) => item.id === "decision")?.state ?? "waiting") }}</span>
         <Transition name="copy-swap" mode="out-in">
@@ -448,10 +406,6 @@ function readableAuthority(authority: string): string {
         <p>AGENT PROPOSAL</p>
         <h3 id="decision-inspection-title">What the agent asked to buy</h3>
         <span>{{ proposal.summary }}</span>
-        <dl>
-          <div><dt>Merchant</dt><dd>{{ proposal.merchant_name }}</dd></div>
-          <div><dt>Quoted total</dt><dd>{{ formatChf(proposal.total_chf) }}</dd></div>
-        </dl>
         <ul>
           <li v-for="item in proposal.items" :key="item.line_no">
             <span>{{ item.quantity }} x</span><strong>{{ item.item_name }}</strong><small>{{ formatChf(item.unit_price * item.quantity) }}</small>
@@ -462,15 +416,6 @@ function readableAuthority(authority: string): string {
         </ul>
       </div>
 
-      <div class="decision-receipt__policies">
-        <p>APPLIED POLICIES</p>
-        <h3>Rules used for this decision</h3>
-        <ul>
-          <li v-for="rule in appliedPolicyRules" :key="`${rule.label}-${rule.detail}`">
-            <strong>{{ rule.label }}</strong><span>{{ rule.detail }}</span>
-          </li>
-        </ul>
-      </div>
     </section>
 
     <section class="decision-receipt__trace" aria-labelledby="decision-trace-title">
@@ -507,9 +452,37 @@ function readableAuthority(authority: string): string {
 
         <Transition name="copy-fade" mode="out-in">
           <ul v-if="activeChecks.length" :key="activeTrace">
-            <li v-for="check in activeChecks" :key="check.name" :class="`is-${check.outcome}`">
-              <span aria-hidden="true">{{ check.outcome === "pass" ? "✓" : check.outcome === "fail" ? "×" : "!" }}</span>
-              <div><strong>{{ check.name }}</strong><p>{{ check.detail }}</p><small>{{ sourceFor(check) }}</small></div>
+            <li
+              v-for="check in activeChecks"
+              :key="check.name"
+              :class="[`is-${check.outcome}`, { 'is-success-card': check.outcome === 'pass', 'has-policy-rule': policyRuleFor(check), 'is-selected': policyRuleFor(check) && activePolicyRule === policyRuleFor(check)?.id }]"
+            >
+              <template v-if="policyRuleFor(check)">
+                <button
+                  type="button"
+                  class="decision-receipt__check-trigger"
+                  :aria-expanded="activePolicyRule === policyRuleFor(check)?.id"
+                  :aria-controls="`policy-enforcement-${policyRuleFor(check)?.id}`"
+                  @click="togglePolicyRule(policyRuleFor(check)!.id)"
+                >
+                  <span class="decision-receipt__check-mark" aria-hidden="true">✓</span>
+                  <span class="decision-receipt__check-copy"><strong>{{ check.name }}</strong><span>{{ check.detail }}</span><small>{{ sourceFor(check) }}</small></span>
+                  <span class="decision-receipt__policy-chevron" aria-hidden="true">⌄</span>
+                </button>
+                <div v-if="activePolicyRule === policyRuleFor(check)?.id" :id="`policy-enforcement-${policyRuleFor(check)?.id}`" class="decision-receipt__policy-enforcement">
+                  <p>What this rule allows</p>
+                  <span>{{ policyRuleFor(check)?.enforcement }}</span>
+                </div>
+              </template>
+              <div v-else-if="check.outcome === 'pass'" class="decision-receipt__check-summary">
+                <span class="decision-receipt__check-mark" aria-hidden="true">✓</span>
+                <span class="decision-receipt__check-copy"><strong>{{ check.name }}</strong><span>{{ check.detail }}</span><small>{{ sourceFor(check) }}</small></span>
+                <span class="decision-receipt__check-status"><i></i>Passed</span>
+              </div>
+              <template v-else>
+                <span aria-hidden="true">{{ check.outcome === "fail" ? "×" : "!" }}</span>
+                <div><strong>{{ check.name }}</strong><p>{{ check.detail }}</p><small>{{ sourceFor(check) }}</small></div>
+              </template>
             </li>
           </ul>
         </Transition>

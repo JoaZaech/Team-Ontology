@@ -125,6 +125,16 @@ class RuleServiceHTTPTests(unittest.TestCase):
             self.assertEqual(status, 200)
             self.assertEqual(audit["revisions"][0]["revision"], 1)
 
+    def test_policy_catalogue_can_create_a_graph_derived_policy(self):
+        with running_server() as (host, port):
+            status, policy = self.request(
+                host, port, "POST", "/v1/rules/policies/from-knowledge-graph", {"cardId": "CA0002"},
+            )
+            self.assertEqual(status, 201)
+            self.assertEqual(policy["subject"]["cardId"], "CA0002")
+            self.assertEqual(policy["knowledgeGraph"]["graphVersion"], "kg-v1")
+            self.assertTrue(policy["knowledgeGraph"]["evidenceIds"])
+
     def test_api_routes_require_a_valid_token(self):
         with running_server() as (host, port):
             status, body = self.request(host, port, "GET", "/v1/rules/policy", authenticated=False)

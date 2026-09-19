@@ -2,7 +2,7 @@
 import { computed, ref } from "vue";
 import visecaLogo from "../assets/viseca-logo.svg";
 
-const emit = defineEmits<{ openWorkflow: []; openSettings: [] }>();
+const emit = defineEmits<{ openWorkflow: []; openSettings: []; openActivity: [] }>();
 
 type Card = {
   id: number;
@@ -44,7 +44,7 @@ function showAction(action: string): void {
     <div class="policy-shell">
       <aside class="policy-sidebar" aria-label="Main navigation">
         <p class="policy-sidebar__label">CARD MANAGEMENT</p>
-        <nav><a href="#" class="policy-nav-link">Overview</a><button type="button" class="policy-nav-link" @click="emit('openSettings')">Wallet policies</button><button type="button" class="policy-nav-link policy-nav-link--active" aria-current="page">Cards</button><a href="#" class="policy-nav-link">Activity</a></nav>
+        <nav><a href="#" class="policy-nav-link">Overview</a><button type="button" class="policy-nav-link" @click="emit('openSettings')">Wallet policies</button><button type="button" class="policy-nav-link policy-nav-link--active" aria-current="page">Cards</button><button type="button" class="policy-nav-link" @click="emit('openActivity')">Activity</button></nav>
         <button type="button" class="policy-nav-link policy-nav-link--bottom" @click="emit('openSettings')">Settings</button>
       </aside>
       <section class="policy-workspace cards-workspace" aria-labelledby="cards-title">

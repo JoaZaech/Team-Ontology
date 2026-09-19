@@ -95,6 +95,13 @@ export interface AgentProposal {
   total_chf: number;
 }
 
+export interface ReceiptPolicyRule {
+  id: string;
+  label: string;
+  detail: string;
+  enforcement: string;
+}
+
 export interface AppliedPolicies {
   confirmed_mandate: {
     mandate_id: string;
@@ -109,6 +116,7 @@ export interface AppliedPolicies {
     adaptive_spend_profiles: Record<string, { maximumChf: number; typicalRange: string; explanation: string }>;
     review_triggers: string[];
     assistant_authority: string;
+    rules: ReceiptPolicyRule[];
   };
 }
 
@@ -161,4 +169,60 @@ export interface DecisionRecordResult {
 
 export interface ApiError {
   error: string;
+}
+
+export interface PolicyRecommendation {
+  recommendation_id: string;
+  kind: "adaptive_spend_profile";
+  profile_category: "Groceries" | "Transport" | "Dining" | "Shopping";
+  name: string;
+  description: string;
+  rule: string;
+  profile: {
+    maximumChf: number;
+    typicalRange: string;
+    explanation: string;
+  };
+  signals: Array<{ value: string; label: string }>;
+  evidence: {
+    approved_purchase_count: number;
+    declined_purchase_count: number;
+    supporting_event_ids: string[];
+    calculation: string;
+  };
+  requires_customer_confirmation: true;
+}
+
+export interface PolicyRecommendationsResponse {
+  recommendation_version: string;
+  generated_from: {
+    artifact: string;
+    source_as_of: string | null;
+    calculation: string;
+  };
+  card_id: string;
+  recommendations: PolicyRecommendation[];
+}
+
+export interface ActivityTransaction {
+  authorization_id: string;
+  merchant_name: string;
+  merchant_category: string;
+  amount_chf: number;
+  currency: string;
+  proposal_summary: string;
+  recommended_decision: Decision | null;
+  agent_decision: Decision | null;
+  final_decision: Exclude<Decision, "step_up"> | null;
+  status: "proposed" | "awaiting_customer" | "approved" | "declined" | "recording_error";
+  reason_codes: string[];
+  received_at: string;
+  updated_at: string;
+  last_receipt_hash: string | null;
+}
+
+export interface ActivitySnapshot {
+  updated_at: string;
+  processing: boolean;
+  transactions: ActivityTransaction[];
 }

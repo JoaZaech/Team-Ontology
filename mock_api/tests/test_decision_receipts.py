@@ -105,6 +105,23 @@ class DecisionReceiptLedgerTests(unittest.TestCase):
         self.assertEqual(second["final_resolution"]["spend_effect"], "approved")
         self.ledger.verify_chain()
 
+    def test_receipt_outbox_event_is_durable_and_idempotently_acknowledged(self):
+        record = self.append(outbox_event={
+            "event_type": "decision.receipt-recorded.v1",
+            "phase": "agent_decision",
+            "occurred_at": "2026-09-19T08:30:00Z",
+        })
+
+        pending = self.ledger.pending_outbox_events()
+        self.assertEqual(len(pending), 1)
+        self.assertEqual(pending[0]["event_id"], record["receipt_hash"])
+        self.assertEqual(pending[0]["payload"]["event_id"], record["receipt_hash"])
+        self.assertEqual(pending[0]["payload"]["phase"], "agent_decision")
+
+        self.ledger.mark_outbox_published(record["receipt_hash"])
+        self.ledger.mark_outbox_published(record["receipt_hash"])
+        self.assertEqual(self.ledger.pending_outbox_events(), ())
+
     def test_sqlite_rejects_updates_to_the_append_only_table(self):
         self.append()
 

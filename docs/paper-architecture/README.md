@@ -3,6 +3,11 @@
 These figures document the current implementation and the proposed hybrid
 architecture without presenting proposed components as already operational.
 
+For the consolidated deployable-service topology and migration plan, see
+[the microservice architecture](../MICROSERVICE_ARCHITECTURE.md). The figures
+in this directory describe research and evidence flow; they are not the runtime
+deployment diagram.
+
 ## Component status
 
 | Component | Status | Role |

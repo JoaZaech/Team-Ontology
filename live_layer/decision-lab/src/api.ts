@@ -1,4 +1,11 @@
-import type { Decision, DecisionEnvelope, DecisionRecordResult, EvaluationResult } from "./types";
+import type {
+  Decision,
+  DecisionEnvelope,
+  DecisionRecordResult,
+  EvaluationResult,
+  ActivitySnapshot,
+  PolicyRecommendationsResponse,
+} from "./types";
 import type { DynamicWalletPolicy, PolicyUpdateRequest } from "./policy-settings";
 
 const mockApiKey = import.meta.env.VITE_VISECA_MOCK_API_KEY ?? "mock-team-key";
@@ -93,11 +100,23 @@ export async function resetRequestRun(): Promise<void> {
   await fetchJson("/mock/reset", { method: "POST" });
 }
 
+export async function getActivity(): Promise<ActivitySnapshot> {
+  const activity = await fetchJson<ActivitySnapshot>("/mock/activity");
+  if (!activity) throw new Error("The activity service returned no data.");
+  return activity;
+}
+
 /** Read the server-owned policy snapshot used by the local rule engine. */
 export async function getWalletPolicy(): Promise<DynamicWalletPolicy> {
   const policy = await fetchJson<DynamicWalletPolicy>("/mock/policy");
   if (!policy) throw new Error("The policy service returned no policy.");
   return policy;
+}
+
+export async function getPolicyRecommendations(): Promise<PolicyRecommendationsResponse> {
+  const recommendations = await fetchJson<PolicyRecommendationsResponse>("/mock/policy-recommendations");
+  if (!recommendations) throw new Error("The recommendation service returned no policy drafts.");
+  return recommendations;
 }
 
 /** Persist a versioned customer policy update before another request is evaluated. */

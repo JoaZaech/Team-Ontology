@@ -36,6 +36,20 @@ class RulebookTests(unittest.TestCase):
         self.assertEqual(result["recommended_decision"], "decline")
         self.assertIn("purchase_limit_exceeded", result["reason_codes"])
 
+    def test_total_mismatch_requires_human_review(self):
+        event = deepcopy(build_connection_event())
+        event["authorization"]["billing_amount_chf"] = 19.0
+        result = evaluate_request(event, self.history)
+        self.assertEqual(result["recommended_decision"], "step_up")
+        self.assertIn("order_total_mismatch", result["reason_codes"])
+        self.assertIn(
+            {"name": "order total", "outcome": "review", "reason_code": "order_total_mismatch"},
+            [
+                {key: check[key] for key in ("name", "outcome", "reason_code")}
+                for check in result["checks"]
+            ],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

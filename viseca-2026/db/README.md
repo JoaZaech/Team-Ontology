@@ -92,3 +92,17 @@ docker compose up -d
 
 These are local dev defaults for synthetic challenge data only — not meant
 for anything beyond this container.
+
+## Decision history
+
+The local Viseca mock stores its activity history in this database. Start the
+database, then run the mock with:
+
+```bash
+export ACTIVITY_DATABASE_URL='postgresql://viseca:viseca@127.0.0.1:5432/viseca'
+python3 -B ../../mock_api/viseca_mock.py
+```
+
+The mock creates `activity_events` and `transactions` on startup. An approved
+or declined decision, and a resolved step-up, returns only after its
+transaction history projection has committed.

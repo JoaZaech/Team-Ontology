@@ -1,0 +1,1 @@
+"""Receipt-safe evidence projection service for the data flywheel."""

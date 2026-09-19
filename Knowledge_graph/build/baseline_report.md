@@ -8,8 +8,8 @@ Simulation policy only; no expected decisions are supplied by the dataset.
 | approve_count | 5 |
 | step_up_count | 0 |
 | decline_count | 5 |
-| average_evaluation_latency_ms | 171.220 |
-| p95_evaluation_latency_ms | 342.845 |
+| average_evaluation_latency_ms | 108.633 |
+| p95_evaluation_latency_ms | 241.048 |
 | context_coverage_percent | 100.000 |
 | explanation_completeness_percent | 100.000 |
 | valid_provenance_path_percent | 100.000 |

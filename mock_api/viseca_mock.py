@@ -11,6 +11,7 @@ from hashlib import sha256
 import json
 import mimetypes
 import os
+import sys
 import time
 from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -18,6 +19,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
+from activity_projection import ActivityProjection
 from decision_receipts import DecisionReceiptLedger, canonical_json
 from observability import Telemetry
 from rule_client import PolicyConflictError, PolicyValidationError, RuleServiceClient
@@ -25,10 +27,19 @@ from benchmark_mock import BenchmarkMockController, BenchmarkRunError
 from viseca_benchmark import VisecaBenchmark
 
 
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from workflow_service import WorkflowState
+from workflow_service.client import WorkflowServiceClient
+
+
 DATA_DIR = Path(__file__).resolve().parents[1] / "viseca-2026" / "data"
 MOCK_KEY = "mock-team-key"  # Public dummy value, only for local contract rehearsal.
 MOCK_RUN_ID = "RUN_MOCK_0001"
 MOCK_AUTHORIZATION_ID = "MOCK_AU0001"
+POLICY_RECOMMENDATIONS_PATH = Path(__file__).resolve().parents[1] / "Knowledge_graph" / "build" / "policy_recommendations.json"
 
 # Built by the TypeScript/Vue app in live_layer/decision-lab/ — run `npm run build`
 # there after changing the UI. This server only serves the resulting static files.
@@ -126,18 +137,34 @@ def build_connection_event(data_dir: Path = DATA_DIR, now: datetime | None = Non
     }
 
 
-class MockVisecaState:
+def _agent_proposal(event: dict[str, Any]) -> dict[str, Any]:
+    authorization = event["authorization"]
+    return {
+        "summary": authorization["purchase_description"],
+        "merchant_name": authorization["merchant"]["merchant_name"],
+        "items": authorization["items"],
+        "items_subtotal_chf": authorization["items_subtotal"],
+        "delivery_fee_chf": authorization["delivery_fee"],
+        "total_chf": authorization["billing_amount_chf"],
+    }
+
+
+class LegacyMockVisecaState:
     def __init__(
         self,
         data_dir: Path = DATA_DIR,
         rule_client: RuleServiceClient | None = None,
         receipt_ledger: DecisionReceiptLedger | None = None,
+        activity_projection: ActivityProjection | None = None,
         telemetry: Telemetry | None = None,
+        policy_recommendations_path: Path = POLICY_RECOMMENDATIONS_PATH,
     ):
         self.data_dir = data_dir
         self.rule_client = rule_client or RuleServiceClient()
         self.receipt_ledger = receipt_ledger or DecisionReceiptLedger(":memory:")
+        self.activity_projection = activity_projection or ActivityProjection()
         self.telemetry = telemetry or Telemetry()
+        self.policy_recommendations_path = policy_recommendations_path
         self.delivered = False
         self.decision: dict[str, Any] | None = None
         self.resolution: dict[str, Any] | None = None
@@ -154,6 +181,7 @@ class MockVisecaState:
 
     def close(self) -> None:
         self.receipt_ledger.close()
+        self.activity_projection.close()
 
     def reset(self) -> None:
         self.delivered = False
@@ -164,6 +192,47 @@ class MockVisecaState:
         self.policy_snapshot = None
         self.trace = None
         self.step_up_recorded_at = None
+
+    def policy_recommendations(self) -> dict[str, Any]:
+        artifact = json.loads(self.policy_recommendations_path.read_text(encoding="utf-8"))
+        if not isinstance(artifact, dict) or not isinstance(artifact.get("by_card"), dict):
+            raise ValueError("invalid_policy_recommendations")
+        policy = self.rule_client.get_policy()
+        card_id = policy["subject"]["cardId"]
+        recommendations = artifact["by_card"].get(card_id, [])
+        if not isinstance(recommendations, list):
+            raise ValueError("invalid_policy_recommendations")
+        profiles = policy["adaptiveSpendProfiles"]
+        unapplied = [
+            recommendation for recommendation in recommendations
+            if (
+                isinstance(recommendation, dict)
+                and isinstance(recommendation.get("profile_category"), str)
+                and isinstance(recommendation.get("profile"), dict)
+                and profiles.get(recommendation["profile_category"]) != recommendation["profile"]
+            )
+        ]
+        return {
+            "recommendation_version": artifact.get("recommendation_version"),
+            "generated_from": artifact.get("generated_from"),
+            "card_id": card_id,
+            "recommendations": unapplied,
+        }
+
+    def activity_snapshot(self) -> dict[str, Any]:
+        return self.activity_projection.snapshot()
+
+    def record_activity_failure(self, phase: str, error: str) -> None:
+        if self.event is None:
+            return
+        self.activity_projection.enqueue(
+            event_key=f"error:{phase}:{self.event['request_id']}:{time.time_ns()}",
+            phase="error",
+            event=self.event,
+            proposal=_agent_proposal(self.event),
+            evaluation=self.evaluation,
+            error=error,
+        )
 
     def _receipt_key(self, stage: str) -> str:
         if self.event is None:
@@ -178,6 +247,13 @@ class MockVisecaState:
         self.event = event
         self.policy_snapshot = self.rule_client.get_policy()
         self.trace = self.telemetry.start_trace(event["request_id"])
+        proposal = _agent_proposal(event)
+        self.activity_projection.enqueue(
+            event_key=f"proposal:{event['request_id']}:{event['runtime']['received_at']}",
+            phase="proposal",
+            event=event,
+            proposal=proposal,
+        )
         self.telemetry.event(
             "decision.request_received",
             trace=self.trace,
@@ -192,14 +268,7 @@ class MockVisecaState:
             "occurred_at": event["runtime"]["received_at"],
             "data": {
                 **event,
-                "agent_proposal": {
-                    "summary": event["authorization"]["purchase_description"],
-                    "merchant_name": event["authorization"]["merchant"]["merchant_name"],
-                    "items": event["authorization"]["items"],
-                    "items_subtotal_chf": event["authorization"]["items_subtotal"],
-                    "delivery_fee_chf": event["authorization"]["delivery_fee"],
-                    "total_chf": event["authorization"]["billing_amount_chf"],
-                },
+                "agent_proposal": proposal,
                 "applied_policies": {
                     "confirmed_mandate": {
                         "mandate_id": event["mandate"]["mandate_id"],
@@ -214,6 +283,7 @@ class MockVisecaState:
                         "adaptive_spend_profiles": self.policy_snapshot["adaptiveSpendProfiles"],
                         "review_triggers": self.policy_snapshot["reviewTriggers"],
                         "assistant_authority": self.policy_snapshot["assistantAuthority"],
+                        "rules": self.policy_snapshot["receiptRules"],
                     },
                 },
             },
@@ -366,6 +436,16 @@ class MockVisecaState:
                 deadline_remaining_ms=_deadline_remaining_ms(self.event["deadline_at"], recorded_at),
             )
         self.decision = recorded_body
+        self.activity_projection.enqueue(
+            event_key=receipt["receipt_hash"],
+            phase="agent_decision",
+            event=self.event,
+            proposal=_agent_proposal(self.event),
+            evaluation=evaluation,
+            receipt=receipt,
+        )
+        if recorded_body["decision"] != "step_up":
+            self.activity_projection.wait_until_idle()
         if recorded_body["decision"] == "step_up":
             self.step_up_recorded_at = recorded_at
             self.telemetry.event(
@@ -463,6 +543,15 @@ class MockVisecaState:
                 final_resolution=final_resolution,
             )
         self.resolution = body
+        self.activity_projection.enqueue(
+            event_key=receipt["receipt_hash"],
+            phase="customer_resolution",
+            event=self.event,
+            proposal=_agent_proposal(self.event),
+            evaluation=evaluation,
+            receipt=receipt,
+        )
+        self.activity_projection.wait_until_idle()
         self.telemetry.event(
             "decision.resolved",
             trace=self.trace,
@@ -479,6 +568,125 @@ class MockVisecaState:
             "decision": body["decision"],
             "decision_receipt_hash": receipt["receipt_hash"],
         }
+
+
+class MockVisecaState(WorkflowState):
+    def __init__(
+        self,
+        data_dir: Path = DATA_DIR,
+        rule_client: RuleServiceClient | None = None,
+        receipt_ledger: DecisionReceiptLedger | None = None,
+        activity_projection: ActivityProjection | None = None,
+        telemetry: Telemetry | None = None,
+        policy_recommendations_path: Path = POLICY_RECOMMENDATIONS_PATH,
+    ):
+        super().__init__(rule_client, receipt_ledger, activity_projection, telemetry)
+        self.data_dir = data_dir
+        self.policy_recommendations_path = policy_recommendations_path
+        self.delivered = False
+        self.benchmark_controller = BenchmarkMockController(
+            self.rule_client,
+            self.receipt_ledger,
+            VisecaBenchmark(data_dir),
+        )
+
+    def reset(self) -> None:
+        super().reset()
+        self.delivered = False
+
+    def policy_recommendations(self) -> dict[str, Any]:
+        artifact = json.loads(self.policy_recommendations_path.read_text(encoding="utf-8"))
+        if not isinstance(artifact, dict) or not isinstance(artifact.get("by_card"), dict):
+            raise ValueError("invalid_policy_recommendations")
+        policy = self.rule_client.get_policy()
+        card_id = policy["subject"]["cardId"]
+        recommendations = artifact["by_card"].get(card_id, [])
+        if not isinstance(recommendations, list):
+            raise ValueError("invalid_policy_recommendations")
+        profiles = policy["adaptiveSpendProfiles"]
+        unapplied = [
+            recommendation for recommendation in recommendations
+            if (
+                isinstance(recommendation, dict)
+                and isinstance(recommendation.get("profile_category"), str)
+                and isinstance(recommendation.get("profile"), dict)
+                and profiles.get(recommendation["profile_category"]) != recommendation["profile"]
+            )
+        ]
+        return {
+            "recommendation_version": artifact.get("recommendation_version"),
+            "generated_from": artifact.get("generated_from"),
+            "card_id": card_id,
+            "recommendations": unapplied,
+        }
+
+    def next_request(self, now: datetime | None = None) -> dict[str, Any] | None:
+        if self.delivered:
+            return None
+        self.delivered = True
+        try:
+            return self.start(build_connection_event(self.data_dir, now=now), MOCK_RUN_ID, "EVT_MOCK_0001")
+        except Exception:
+            self.delivered = False
+            raise
+
+
+class RemoteWorkflowTelemetry:
+    def __init__(self, workflow_client: WorkflowServiceClient):
+        self.workflow_client = workflow_client
+
+    def metrics_snapshot(self) -> dict[str, Any]:
+        return self.workflow_client.observability()
+
+
+class RemoteMockVisecaState(MockVisecaState):
+    def __init__(self, workflow_client: WorkflowServiceClient, **kwargs: Any):
+        super().__init__(**kwargs)
+        self.workflow_client = workflow_client
+        self.telemetry = RemoteWorkflowTelemetry(workflow_client)
+
+    def reset(self) -> None:
+        self.workflow_client.reset()
+        super().reset()
+
+    def next_request(self, now: datetime | None = None) -> dict[str, Any] | None:
+        if self.delivered:
+            return None
+        envelope = self.workflow_client.start(
+            build_connection_event(self.data_dir, now=now),
+            MOCK_RUN_ID,
+            "EVT_MOCK_0001",
+        )
+        self.delivered = True
+        self.authorization_id = envelope["authorization_id"]
+        return envelope
+
+    def evaluate(self) -> dict[str, Any]:
+        if self.authorization_id is None:
+            raise ValueError("request_not_delivered")
+        return self.workflow_client.evaluate(self.authorization_id)
+
+    def record_decision(
+        self,
+        authorization_id: str,
+        body: Any,
+        now: datetime | None = None,
+    ) -> dict[str, Any]:
+        return self.workflow_client.record_decision(authorization_id, body)
+
+    def resolve_decision(
+        self,
+        authorization_id: str,
+        body: Any,
+        now: datetime | None = None,
+    ) -> dict[str, Any]:
+        return self.workflow_client.resolve_decision(authorization_id, body)
+
+    def activity_snapshot(self) -> dict[str, Any]:
+        return self.workflow_client.activity()
+
+    def record_activity_failure(self, phase: str, error: str) -> None:
+        return
 
 
 def make_handler(state: MockVisecaState):
@@ -507,8 +715,15 @@ def make_handler(state: MockVisecaState):
                                      "source_authorization_id": "AU0001"})
             elif path == "/mock/policy":
                 self.send_json(200, state.rule_client.get_policy())
+            elif path == "/mock/policy-recommendations":
+                try:
+                    self.send_json(200, state.policy_recommendations())
+                except (OSError, ValueError) as exc:
+                    self.send_json(503, {"error": str(exc)})
             elif path == "/mock/observability":
                 self.send_json(200, state.telemetry.metrics_snapshot())
+            elif path == "/mock/activity":
+                self.send_json(200, state.activity_snapshot())
             elif path == "/mock/benchmark/runs":
                 self.send_json(200, {"runs": state.benchmark_controller.summaries()})
             elif path.startswith("/mock/benchmark/runs/"):
@@ -555,6 +770,7 @@ def make_handler(state: MockVisecaState):
             try:
                 self.send_json(200, operation(authorization_id, self.read_json_body()))
             except (ValueError, json.JSONDecodeError) as exc:
+                state.record_activity_failure("decision_submission", str(exc))
                 self.send_json(400, {"error": str(exc)})
 
         def do_PATCH(self):
@@ -673,8 +889,20 @@ def make_handler(state: MockVisecaState):
 
 
 if __name__ == "__main__":
-    receipt_path = os.environ.get("DECISION_RECEIPTS_PATH", ":memory:")
-    state = MockVisecaState(receipt_ledger=DecisionReceiptLedger(receipt_path))
-    server = HTTPServer(("127.0.0.1", 8082), make_handler(state))
-    print("Local Viseca mock: http://127.0.0.1:8082")
+    default_data_path = Path(__file__).resolve().parent / "var"
+    default_data_path.mkdir(exist_ok=True)
+    receipt_path = os.environ.get("DECISION_RECEIPTS_PATH", str(default_data_path / "decision_receipts.sqlite3"))
+    if os.environ.get("WORKFLOW_SERVICE_URL"):
+        state = RemoteMockVisecaState(
+            WorkflowServiceClient(),
+            receipt_ledger=DecisionReceiptLedger(receipt_path),
+        )
+    else:
+        state = MockVisecaState(
+            receipt_ledger=DecisionReceiptLedger(receipt_path),
+            activity_projection=ActivityProjection(os.environ.get("ACTIVITY_DATABASE_URL")),
+        )
+    port = int(os.environ.get("MOCK_API_PORT", "8082"))
+    server = HTTPServer(("127.0.0.1", port), make_handler(state))
+    print(f"Local Viseca mock: http://127.0.0.1:{port}")
     server.serve_forever()

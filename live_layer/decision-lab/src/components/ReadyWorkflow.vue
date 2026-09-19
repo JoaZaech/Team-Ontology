@@ -184,8 +184,8 @@ onBeforeUnmount(() => {
         aria-describedby="decision-dialog-description"
       >
         <div class="decision-dialog__signal" aria-hidden="true">!</div>
-        <p class="decision-dialog__eyebrow">YOUR DECISION</p>
-        <h2 id="decision-dialog-title">Confirm this purchase?</h2>
+        <p class="decision-dialog__eyebrow">HUMAN INTERVENTION IS NEEDED</p>
+        <h2 id="decision-dialog-title">Review this purchase</h2>
         <p id="decision-dialog-description" class="decision-dialog__intro">
           The automated process has paused because one part of this purchase needs your confirmation. It will not decide for you.
         </p>

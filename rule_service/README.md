@@ -1,6 +1,6 @@
 # Local Rule Service
 
-The service evaluates a fixed mandate plus the active customer policy. Policies are durable JSON documents in a local SQLite database, rather than executable code supplied over HTTP. That keeps the policy language constrained, validated, explainable, and safe to evaluate.
+The service evaluates a fixed mandate plus the active customer policy. Policies are durable JSON documents in a local SQLite database, rather than executable code supplied over HTTP. On first use, the complete default document is derived from the trusted `Knowledge_graph` history for its card and stores the graph version, as-of time, and supporting authorization IDs alongside the customer policy.
 
 Run the service with:
 
@@ -23,6 +23,7 @@ Use the policy endpoints as follows:
 - `PATCH /v1/rules/policy` applies a validated patch using `policyId`, `expectedRevision`, and `patch`.
 - `GET /v1/rules/policies` lists stored policies.
 - `POST /v1/rules/policies` adds a complete validated policy document for a new card.
+- `POST /v1/rules/policies/from-knowledge-graph` with `{"cardId":"CA0002"}` derives and stores a complete policy for that card from the knowledge graph.
 - `GET /v1/rules/policies/{policyId}/revisions` returns its revision ledger.
 
 Evaluation always loads the policy bound to the event card from the local database. A caller cannot inject a policy snapshot into `/v1/rules/evaluate`.
