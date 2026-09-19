@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import sys
 import tempfile
@@ -64,10 +66,35 @@ class RecordingFlywheelPublisher(NullFlywheelPublisher):
         self.trigger_count += 1
 
 
+class RecordingApprovalCallNotifier:
+    def __init__(self):
+        self.calls = []
+
+    def notify(self, event, evaluation):
+        self.calls.append((event, evaluation))
+
+    def snapshot(self):
+        return {"status": "queued" if self.calls else "ready"}
+
+    def close(self):
+        return
+
+
 @contextmanager
-def running_workflow_service(rule_client: RuleServiceClient):
-    state = WorkflowServiceState(rule_client=rule_client)
-    server = WorkflowHTTPServer(("127.0.0.1", 0), WorkflowRequestHandler, state, TOKEN)
+def running_workflow_service(
+    rule_client: RuleServiceClient,
+    *,
+    state: WorkflowServiceState | None = None,
+    voice_approval_token: str | None = None,
+):
+    state = state or WorkflowServiceState(rule_client=rule_client)
+    server = WorkflowHTTPServer(
+        ("127.0.0.1", 0),
+        WorkflowRequestHandler,
+        state,
+        TOKEN,
+        voice_approval_token,
+    )
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     try:
@@ -94,11 +121,20 @@ def running_evidence_service():
         server.server_close()
 
 
-def request(base_url: str, method: str, path: str, body=None, token: str | None = TOKEN):
+def request(
+    base_url: str,
+    method: str,
+    path: str,
+    body=None,
+    token: str | None = TOKEN,
+    voice_token: str | None = None,
+):
     payload = json.dumps(body).encode("utf-8") if body is not None else None
     headers = {"Content-Type": "application/json"} if payload is not None else {}
     if token is not None:
         headers["X-Workflow-Service-Token"] = token
+    if voice_token is not None:
+        headers["X-Voice-Approval-Token"] = voice_token
     call = Request(base_url + path, data=payload, headers=headers, method=method)
     with urlopen(call, timeout=2) as response:
         return response.status, json.loads(response.read())
@@ -314,6 +350,86 @@ class WorkflowServiceHTTPTests(unittest.TestCase):
                     self.assertEqual(resolved["summary"]["prior_approved_count"], 1)
                 finally:
                     workflow.close()
+
+    def test_step_up_starts_one_approval_call(self):
+        with running_rule_service() as rule_url:
+            rule_client = RuleServiceClient(rule_url)
+            notifier = RecordingApprovalCallNotifier()
+            workflow = WorkflowState(
+                rule_client=rule_client,
+                decision_hub=DecisionHub(
+                    PolicySubsystem(rule_client),
+                    (KnowledgeGraphReviewSubsystem(),),
+                ),
+                approval_call_notifier=notifier,
+            )
+            try:
+                workflow.start(build_connection_event(), MOCK_RUN_ID)
+                evaluation = workflow.evaluate()
+                body = {
+                    "authorization_id": workflow.authorization_id,
+                    "decision": "step_up",
+                    "reason_codes": evaluation["reason_codes"],
+                }
+                workflow.record_decision(workflow.authorization_id, body)
+                workflow.record_decision(workflow.authorization_id, body)
+
+                self.assertEqual(len(notifier.calls), 1)
+                self.assertEqual(notifier.calls[0][0]["authorization"]["authorization_id"], workflow.authorization_id)
+            finally:
+                workflow.close()
+
+    def test_voice_agent_can_resolve_step_up_with_separate_token(self):
+        voice_token = "voice-approval-test-token-with-at-least-32-characters"
+        with running_rule_service() as rule_url:
+            rule_client = RuleServiceClient(rule_url)
+            state = WorkflowServiceState(
+                rule_client=rule_client,
+                decision_hub=DecisionHub(
+                    PolicySubsystem(rule_client),
+                    (KnowledgeGraphReviewSubsystem(),),
+                ),
+            )
+            with running_workflow_service(
+                rule_client,
+                state=state,
+                voice_approval_token=voice_token,
+            ) as workflow_url:
+                event = build_connection_event()
+                _, envelope = request(workflow_url, "POST", "/v1/authorizations", {
+                    "event": event,
+                    "runId": MOCK_RUN_ID,
+                })
+                authorization_id = envelope["authorization_id"]
+                _, evaluation = request(
+                    workflow_url,
+                    "POST",
+                    f"/v1/authorizations/{authorization_id}/evaluate",
+                    {},
+                )
+                request(workflow_url, "POST", f"/v1/authorizations/{authorization_id}/decision", {
+                    "authorization_id": authorization_id,
+                    "decision": "step_up",
+                    "reason_codes": evaluation["reason_codes"],
+                })
+
+                path = f"/v1/voice-approvals/{authorization_id}/resolution"
+                with self.assertRaises(HTTPError) as raised:
+                    request(workflow_url, "POST", path, {"decision": "approve"}, token=None)
+                self.assertEqual(raised.exception.code, 401)
+                raised.exception.close()
+
+                status, resolved = request(
+                    workflow_url,
+                    "POST",
+                    path,
+                    {"decision": "approve"},
+                    token=None,
+                    voice_token=voice_token,
+                )
+                self.assertEqual(status, 200)
+                self.assertEqual(resolved["status"], "resolved")
+                self.assertEqual(resolved["decision"], "approve")
 
     def test_publisher_reconciles_pending_events_after_workflow_restart(self):
         with tempfile.TemporaryDirectory() as directory:

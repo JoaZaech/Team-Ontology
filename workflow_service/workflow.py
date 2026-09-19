@@ -18,6 +18,7 @@ if str(MOCK_API_ROOT) not in sys.path:
 
 from activity_projection import ActivityProjection
 from decision_receipts import DecisionReceiptLedger, canonical_json
+from workflow_service.approval_call import ApprovalCallNotifier, NullApprovalCallNotifier
 from workflow_service.flywheel import FlywheelPublisher, NullFlywheelPublisher
 from workflow_service.inference import DecisionHub, PolicySubsystem
 from observability import Telemetry
@@ -113,6 +114,7 @@ class WorkflowState:
         activity_projection: ActivityProjection | None = None,
         telemetry: Telemetry | None = None,
         flywheel_publisher: FlywheelPublisher | None = None,
+        approval_call_notifier: ApprovalCallNotifier | None = None,
     ):
         self.rule_client = rule_client or RuleServiceClient()
         self.decision_hub = decision_hub or DecisionHub(PolicySubsystem(self.rule_client))
@@ -120,6 +122,7 @@ class WorkflowState:
         self.activity_projection = activity_projection or InMemoryActivityProjection()
         self.telemetry = telemetry or Telemetry()
         self.flywheel_publisher = flywheel_publisher or NullFlywheelPublisher()
+        self.approval_call_notifier = approval_call_notifier or NullApprovalCallNotifier()
         self.event: dict[str, Any] | None = None
         self.run_id: str | None = None
         self.authorization_id: str | None = None
@@ -131,6 +134,7 @@ class WorkflowState:
         self.step_up_recorded_at: datetime | None = None
 
     def close(self) -> None:
+        self.approval_call_notifier.close()
         self.flywheel_publisher.close()
         self.receipt_ledger.close()
         self.activity_projection.close()
@@ -211,6 +215,9 @@ class WorkflowState:
 
     def flywheel_status(self) -> dict[str, Any]:
         return self.receipt_ledger.outbox_status()
+
+    def approval_call_status(self) -> dict[str, Any]:
+        return self.approval_call_notifier.snapshot()
 
     def record_activity_failure(self, phase: str, error: str) -> None:
         if self.event is None:
@@ -439,6 +446,7 @@ class WorkflowState:
         if self.decision["decision"] == "step_up":
             self.step_up_recorded_at = recorded_at
             self.telemetry.event("decision.step_up", trace=self.trace, labels={"component": "workflow_service", "status": "recorded"})
+            self.approval_call_notifier.notify(self.event, evaluation)
         else:
             self.activity_projection.wait_until_idle()
         self.telemetry.event(

@@ -16,6 +16,7 @@ import time
 from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
+from secrets import compare_digest
 from typing import Any
 from urllib.parse import urlparse
 
@@ -32,6 +33,10 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from workflow_service import WorkflowState
+from workflow_service.approval_call import (
+    ApprovalCallNotifier,
+    approval_call_notifier_from_environment,
+)
 from workflow_service.client import WorkflowServiceClient
 
 
@@ -579,12 +584,14 @@ class MockVisecaState(WorkflowState):
         activity_projection: ActivityProjection | None = None,
         telemetry: Telemetry | None = None,
         policy_recommendations_path: Path = POLICY_RECOMMENDATIONS_PATH,
+        approval_call_notifier: ApprovalCallNotifier | None = None,
     ):
         super().__init__(
             rule_client=rule_client,
             receipt_ledger=receipt_ledger,
             activity_projection=activity_projection,
             telemetry=telemetry,
+            approval_call_notifier=approval_call_notifier,
         )
         self.data_dir = data_dir
         self.policy_recommendations_path = policy_recommendations_path
@@ -694,7 +701,7 @@ class RemoteMockVisecaState(MockVisecaState):
         return
 
 
-def make_handler(state: MockVisecaState):
+def make_handler(state: MockVisecaState, voice_approval_token: str | None = None):
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self):
             path = urlparse(self.path).path
@@ -740,9 +747,26 @@ def make_handler(state: MockVisecaState):
                 self.send_json(404, {"error": "not_found"})
 
         def do_POST(self):
+            path = urlparse(self.path).path
+            voice_prefix = "/v1/voice-approvals/"
+            if path.startswith(voice_prefix) and path.endswith("/resolution"):
+                if not self.voice_authorized():
+                    return
+                authorization_id = path[len(voice_prefix):-len("/resolution")]
+                try:
+                    body = self.read_json_body()
+                    if not isinstance(body, dict) or set(body) != {"decision"}:
+                        raise ValueError("invalid_voice_resolution")
+                    self.send_json(200, state.resolve_decision(authorization_id, {
+                        "authorization_id": authorization_id,
+                        "decision": body["decision"],
+                    }))
+                except (ValueError, json.JSONDecodeError) as exc:
+                    state.record_activity_failure("voice_resolution", str(exc))
+                    self.send_json(409, {"error": str(exc)})
+                return
             if not self.authorized():
                 return
-            path = urlparse(self.path).path
             if path == "/mock/reset":
                 state.reset()
                 self.send_json(200, {"status": "reset", "run_id": MOCK_RUN_ID})
@@ -855,6 +879,17 @@ def make_handler(state: MockVisecaState):
             self.send_json(401, {"error": "unauthorized"})
             return False
 
+        def voice_authorized(self) -> bool:
+            supplied = self.headers.get_all("X-Voice-Approval-Token") or []
+            if (
+                isinstance(voice_approval_token, str)
+                and len(supplied) == 1
+                and compare_digest(supplied[0], voice_approval_token)
+            ):
+                return True
+            self.send_json(401, {"error": "voice_approval_unauthorized"})
+            return False
+
         def send_json(self, status: int, body: dict[str, Any]):
             payload = json.dumps(body).encode("utf-8")
             self.send_response(status)
@@ -897,6 +932,7 @@ if __name__ == "__main__":
     default_data_path = Path(__file__).resolve().parent / "var"
     default_data_path.mkdir(exist_ok=True)
     receipt_path = os.environ.get("DECISION_RECEIPTS_PATH", str(default_data_path / "decision_receipts.sqlite3"))
+    approval_notifier, voice_approval_token = approval_call_notifier_from_environment()
     if os.environ.get("WORKFLOW_SERVICE_URL"):
         state = RemoteMockVisecaState(
             WorkflowServiceClient(),
@@ -906,8 +942,10 @@ if __name__ == "__main__":
         state = MockVisecaState(
             receipt_ledger=DecisionReceiptLedger(receipt_path),
             activity_projection=ActivityProjection(os.environ.get("ACTIVITY_DATABASE_URL")),
+            approval_call_notifier=approval_notifier,
         )
     port = int(os.environ.get("MOCK_API_PORT", "8082"))
-    server = HTTPServer(("127.0.0.1", port), make_handler(state))
-    print(f"Local Viseca mock: http://127.0.0.1:{port}")
+    host = os.environ.get("MOCK_API_HOST", "127.0.0.1")
+    server = HTTPServer((host, port), make_handler(state, voice_approval_token))
+    print(f"Local Viseca mock: http://{host}:{port}")
     server.serve_forever()

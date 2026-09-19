@@ -10,6 +10,7 @@ from secrets import compare_digest
 from typing import Any
 from urllib.parse import urlparse
 
+from .approval_call import approval_call_notifier_from_environment
 from .inference import DecisionHub, KnowledgeGraphSubsystem, PolicySubsystem
 from .flywheel import EvidenceServiceOutboxPublisher
 from .workflow import WorkflowState
@@ -50,14 +51,23 @@ class WorkflowServiceState(WorkflowState):
             "recommended_decision": self.evaluation.get("recommended_decision") if self.evaluation else None,
             "decision": self.decision,
             "resolution": self.resolution,
+            "approval_call": self.approval_call_status(),
         }
 
 
 class WorkflowHTTPServer(HTTPServer):
-    def __init__(self, address: tuple[str, int], handler, state: WorkflowServiceState, api_token: str):
+    def __init__(
+        self,
+        address: tuple[str, int],
+        handler,
+        state: WorkflowServiceState,
+        api_token: str,
+        voice_approval_token: str | None = None,
+    ):
         super().__init__(address, handler)
         self.workflow_state = state
         self.workflow_api_token = api_token
+        self.voice_approval_token = voice_approval_token
 
     def get_request(self):
         request, client_address = super().get_request()
@@ -104,15 +114,23 @@ class WorkflowRequestHandler(BaseHTTPRequestHandler):
             self._json(404, {"error": "not_found"})
 
     def do_POST(self):
-        if not self._authorized():
+        path = urlparse(self.path).path
+        voice_prefix = "/v1/voice-approvals/"
+        is_voice_resolution = path.startswith(voice_prefix) and path.endswith("/resolution")
+        if is_voice_resolution:
+            if not self._voice_authorized():
+                return
+        elif not self._authorized():
             return
         try:
             body = self._read_json_body()
         except ValueError:
             self._json(400, {"error": "invalid_json"})
             return
-        path = urlparse(self.path).path
-        if path == "/v1/authorizations":
+        if is_voice_resolution:
+            authorization_id = path[len(voice_prefix):-len("/resolution")]
+            self._voice_resolution(authorization_id, body)
+        elif path == "/v1/authorizations":
             self._start(body)
         elif path == "/v1/workflows/reset":
             self._reset(body)
@@ -171,11 +189,33 @@ class WorkflowRequestHandler(BaseHTTPRequestHandler):
         except ValueError as exc:
             self._json(404, {"error": str(exc)})
 
+    def _voice_resolution(self, authorization_id: str, body: Any) -> None:
+        if not isinstance(body, dict) or set(body) != {"decision"}:
+            self._json(400, {"error": "invalid_voice_resolution"})
+            return
+        try:
+            response = self.state.resolve_decision(authorization_id, {
+                "authorization_id": authorization_id,
+                "decision": body["decision"],
+            })
+            self._json(200, response)
+        except ValueError as exc:
+            self.state.record_activity_failure("voice_resolution", str(exc))
+            self._json(409, {"error": str(exc)})
+
     def _authorized(self) -> bool:
         supplied = self.headers.get_all("X-Workflow-Service-Token") or []
         if len(supplied) == 1 and compare_digest(supplied[0], self.api_token):
             return True
         self._json(401, {"error": "service_unauthorized"})
+        return False
+
+    def _voice_authorized(self) -> bool:
+        expected = self.server.voice_approval_token
+        supplied = self.headers.get_all("X-Voice-Approval-Token") or []
+        if isinstance(expected, str) and len(supplied) == 1 and compare_digest(supplied[0], expected):
+            return True
+        self._json(401, {"error": "voice_approval_unauthorized"})
         return False
 
     def _read_json_body(self) -> Any:
@@ -208,15 +248,23 @@ def run() -> None:
         if not isinstance(evidence_token, str) or len(evidence_token) < 32:
             raise ValueError("EVIDENCE_SERVICE_API_TOKEN must be at least 32 characters when EVIDENCE_SERVICE_URL is set")
         publisher = EvidenceServiceOutboxPublisher(receipt_ledger, evidence_url, evidence_token)
+    approval_notifier, voice_approval_token = approval_call_notifier_from_environment()
     state = WorkflowServiceState(
         rule_client=rule_client,
         decision_hub=_decision_hub(rule_client),
         receipt_ledger=receipt_ledger,
         flywheel_publisher=publisher,
+        approval_call_notifier=approval_notifier,
     )
     if publisher is not None:
         publisher.start()
-    server = WorkflowHTTPServer(("127.0.0.1", DEFAULT_PORT), WorkflowRequestHandler, state, token)
+    server = WorkflowHTTPServer(
+        ("127.0.0.1", DEFAULT_PORT),
+        WorkflowRequestHandler,
+        state,
+        token,
+        voice_approval_token,
+    )
     print(f"Workflow service: http://127.0.0.1:{DEFAULT_PORT}")
     getattr(server, "serve_forever")()
 
