@@ -1,0 +1,82 @@
+{
+  "ontology_version": "ontology-v1",
+  "policies": [
+    {
+      "content_hash": "e6bdfab4561965fdfa53ab4fc235e76ca5d31610d89047ffcbe263b13202f6e4",
+      "id": "PolicyVersion:simulation-scen0001-v1",
+      "rules": [
+        {
+          "classification": "hard",
+          "dataset_field": "purchase_attempts.billing_amount_chf",
+          "evidence_definition": null,
+          "id": "PolicyRule:simulation-scen0001-v1:maximum_order",
+          "operator": "<=",
+          "target_concept": "TransactionLimit",
+          "value": 12000
+        },
+        {
+          "classification": "hard",
+          "dataset_field": "purchase_attempts.billing_amount_chf",
+          "evidence_definition": "approved_authority_spend_within_rolling_window",
+          "id": "PolicyRule:simulation-scen0001-v1:rolling_budget",
+          "operator": "<=",
+          "target_concept": "RollingSpendLimit",
+          "value": 30000,
+          "window_days": 7
+        },
+        {
+          "classification": "hard",
+          "dataset_field": "purchase_attempt_items.item_category",
+          "evidence_definition": null,
+          "id": "PolicyRule:simulation-scen0001-v1:item_category",
+          "operator": "in",
+          "target_concept": "ItemCategory",
+          "value": [
+            "groceries"
+          ]
+        },
+        {
+          "classification": "hard",
+          "dataset_field": "purchase_attempts.fulfillment_method",
+          "evidence_definition": null,
+          "id": "PolicyRule:simulation-scen0001-v1:fulfillment_method",
+          "operator": "==",
+          "target_concept": "Delivery",
+          "value": "delivery"
+        }
+      ],
+      "scope": "SCEN0001",
+      "source_kind": "simulation_rationale",
+      "status": "simulation_assumption",
+      "version": "simulation-scen0001-v1"
+    }
+  ],
+  "scenario_bindings": [
+    {
+      "policy_id": null,
+      "scenario_id": "SCEN0000",
+      "status": "unbound"
+    },
+    {
+      "policy_id": "PolicyVersion:simulation-scen0001-v1",
+      "scenario_id": "SCEN0001",
+      "status": "bound"
+    },
+    {
+      "policy_id": null,
+      "scenario_id": "SCEN0002",
+      "status": "unbound"
+    },
+    {
+      "policy_id": null,
+      "scenario_id": "SCEN0003",
+      "status": "unbound"
+    },
+    {
+      "policy_id": null,
+      "scenario_id": "SCEN0004",
+      "status": "unbound"
+    }
+  ],
+  "version": "policy-bindings-v1"
+}

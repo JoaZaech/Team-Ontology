@@ -30,11 +30,55 @@ const activeTrace = ref<TraceId>("request");
 
 const authorization = computed(() => props.purchase?.data.authorization ?? null);
 const mandate = computed(() => props.purchase?.data.mandate ?? null);
+const proposal = computed(() => props.purchase?.data.agent_proposal ?? null);
+const appliedPolicies = computed(() => props.purchase?.data.applied_policies ?? null);
 const passedChecks = computed(() => props.evaluation?.checks.filter((check) => check.outcome === "pass") ?? []);
 const failedChecks = computed(() => props.evaluation?.checks.filter((check) => check.outcome === "fail") ?? []);
 const reviewChecks = computed(() => props.evaluation?.checks.filter((check) => check.outcome === "review") ?? []);
 const policyChecks = computed(() => props.evaluation?.checks.filter((check) => isPolicyCheck(check)) ?? []);
 const contextChecks = computed(() => props.evaluation?.checks.filter((check) => !isPolicyCheck(check)) ?? []);
+
+const appliedPolicyRules = computed(() => {
+  const policies = appliedPolicies.value;
+  if (!policies) return [];
+
+  const rules = [
+    {
+      label: "Confirmed instruction",
+      detail: policies.confirmed_mandate.instruction,
+    },
+    ...policies.confirmed_mandate.hard_rules.map((rule) => ({
+      label: "Mandate limit",
+      detail: formatMandateRule(rule),
+    })),
+    {
+      label: "Daily spending limit",
+      detail: `Up to ${formatChf(policies.wallet_policy.daily_spending_limit_chf)} per day.`,
+    },
+  ];
+
+  const requestedCategories = new Set(proposal.value?.items.map((item) => item.item_category.toLowerCase()) ?? []);
+  for (const [category, profile] of Object.entries(policies.wallet_policy.adaptive_spend_profiles)) {
+    if (requestedCategories.has(category.toLowerCase())) {
+      rules.push({
+        label: `${category} maximum`,
+        detail: `Up to ${formatChf(profile.maximumChf)} for this category.`,
+      });
+    }
+  }
+
+  if (policies.wallet_policy.review_triggers.length) {
+    rules.push({
+      label: "Review trigger",
+      detail: policies.wallet_policy.review_triggers.map(readableReviewTrigger).join(", "),
+    });
+  }
+  rules.push({
+    label: "Assistant authority",
+    detail: readableAuthority(policies.wallet_policy.assistant_authority),
+  });
+  return rules;
+});
 
 const status = computed(() => {
   if (props.stage === "approved") {
@@ -331,6 +375,34 @@ function formatTime(value: string | undefined): string {
     timeZone: "UTC",
   }).format(new Date(value));
 }
+
+function formatChf(value: number): string {
+  return `CHF ${value.toFixed(2)}`;
+}
+
+function formatMandateRule(rule: { field: string; operator: string; value: number | string | boolean; currency?: string }): string {
+  const subject = rule.field === "authorization.billing_amount_chf" ? "Purchase total" : rule.field;
+  const amount = typeof rule.value === "number" && rule.currency ? `${rule.currency} ${rule.value.toFixed(2)}` : String(rule.value);
+  return `${subject} ${rule.operator} ${amount}.`;
+}
+
+function readableReviewTrigger(trigger: string): string {
+  const names: Record<string, string> = {
+    new_merchant: "First purchase with a merchant",
+    online_purchase: "Online purchase",
+    unusual_activity: "Unusual activity",
+  };
+  return names[trigger] ?? trigger;
+}
+
+function readableAuthority(authority: string): string {
+  const names: Record<string, string> = {
+    review: "Ask for confirmation before approval.",
+    trusted: "May approve within the confirmed limits.",
+    autopilot: "May approve routine purchases within the confirmed limits.",
+  };
+  return names[authority] ?? authority;
+}
 </script>
 
 <template>
@@ -369,6 +441,36 @@ function formatTime(value: string | undefined): string {
           <small><strong>Evidence source</strong>{{ primaryReason.source }}</small>
         </div>
       </Transition>
+    </section>
+
+    <section v-if="proposal && appliedPolicies" class="decision-receipt__inspection" aria-labelledby="decision-inspection-title">
+      <div class="decision-receipt__proposal">
+        <p>AGENT PROPOSAL</p>
+        <h3 id="decision-inspection-title">What the agent asked to buy</h3>
+        <span>{{ proposal.summary }}</span>
+        <dl>
+          <div><dt>Merchant</dt><dd>{{ proposal.merchant_name }}</dd></div>
+          <div><dt>Quoted total</dt><dd>{{ formatChf(proposal.total_chf) }}</dd></div>
+        </dl>
+        <ul>
+          <li v-for="item in proposal.items" :key="item.line_no">
+            <span>{{ item.quantity }} x</span><strong>{{ item.item_name }}</strong><small>{{ formatChf(item.unit_price * item.quantity) }}</small>
+          </li>
+          <li v-if="proposal.delivery_fee_chf > 0" class="decision-receipt__proposal-fee">
+            <span></span><strong>Delivery</strong><small>{{ formatChf(proposal.delivery_fee_chf) }}</small>
+          </li>
+        </ul>
+      </div>
+
+      <div class="decision-receipt__policies">
+        <p>APPLIED POLICIES</p>
+        <h3>Rules used for this decision</h3>
+        <ul>
+          <li v-for="rule in appliedPolicyRules" :key="`${rule.label}-${rule.detail}`">
+            <strong>{{ rule.label }}</strong><span>{{ rule.detail }}</span>
+          </li>
+        </ul>
+      </div>
     </section>
 
     <section class="decision-receipt__trace" aria-labelledby="decision-trace-title">

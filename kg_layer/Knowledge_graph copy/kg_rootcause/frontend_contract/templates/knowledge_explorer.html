@@ -1,0 +1,34 @@
+<div id="precomputed-kg-explorer">
+<style>__EXPLORER_CSS__</style>
+<h2>Precomputed knowledge graph</h2>
+<div class="text-small text-muted">Historical evidence · September 2025–July 2026 · 41 cards · 4,701 authorizations</div>
+<div class="viz-controls">
+<label class="form-label">Card<select class="form-select" data-card></select></label>
+<label class="form-label">Relationship<select class="form-select" data-dimension>
+<option value="card_merchant">Card → merchant</option><option value="card_device">Card → device</option><option value="card_category">Card → category</option><option value="card_country">Card → country</option><option value="customer_device">Customer → device</option><option value="card_amount">Card → amount profile</option><option value="initiator_activity">Card → initiator activity</option><option value="time_of_day">Card → hour of day</option>
+</select></label>
+</div>
+<div class="kg-chain" data-chain></div>
+<p data-context-note hidden></p>
+<svg class="kg-graph" data-graph role="img" aria-label="Precomputed relationships for the selected card"></svg>
+<div class="text-small text-muted kg-note" data-count></div>
+<label class="form-label">Inspect relationship<select class="form-select" data-relationship></select></label>
+<div class="kg-detail" aria-live="polite">
+<h3 data-title></h3>
+<div class="table-responsive"><table class="table table-sm"><tbody data-metrics></tbody></table></div>
+<details><summary data-source-label></summary><div class="text-small kg-events" data-events></div></details>
+<hr>
+<h3>Declined transactions</h3>
+<div class="text-small text-muted" data-decline-count></div>
+<label class="form-label" data-decline-control>Inspect declined record<select class="form-select" data-decline></select></label>
+<div data-decline-detail>
+<div class="kg-chain" data-decline-chain></div>
+
+<div class="table-responsive"><table class="table table-sm"><tbody data-decline-facts></tbody></table></div>
+<details><summary>Evidence available before this transaction</summary><div class="table-responsive"><table class="table table-sm"><tbody data-prior-facts></tbody></table></div><div class="text-small kg-events" data-prior-ids></div></details>
+</div>
+<details class="kg-detail" data-simulation><summary>Simulation declines — recorded rule failures</summary><div class="text-small text-muted">SCEN0001 · Separate from historical outcomes · Simulation policy</div><div class="table-responsive"><table class="table table-sm"><thead><tr><th>Request</th><th>Order</th><th>Failed checks</th></tr></thead><tbody data-simulation-rows></tbody></table></div></details>
+</div>
+<script type="application/json" data-payload>__KG_DATA__</script>
+<script>__EXPLORER_JS__</script>
+</div>

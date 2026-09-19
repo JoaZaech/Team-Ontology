@@ -55,28 +55,51 @@ class MerchantHistory:
         approved: Counter,
         approved_devices: Counter | None = None,
         approved_daily_spend: Counter | None = None,
+        items: dict[str, dict[str, str]] | None = None,
+        approved_merchant_times: dict[tuple[str, str], list[datetime]] | None = None,
+        approved_device_times: dict[tuple[str, str], list[datetime]] | None = None,
+        approved_country_times: dict[tuple[str, str], list[datetime]] | None = None,
     ):
         self.merchants = merchants
         self.approved = approved
         self.approved_devices = approved_devices or Counter()
         self.approved_daily_spend = approved_daily_spend or Counter()
+        self.items = items or {}
+        self.approved_merchant_times = approved_merchant_times or {}
+        self.approved_device_times = approved_device_times or {}
+        self.approved_country_times = approved_country_times or {}
 
     @classmethod
     def from_data_dir(cls, data_dir: str | Path) -> "MerchantHistory":
         data_dir = Path(data_dir)
         with (data_dir / "merchants.csv").open(newline="", encoding="utf-8") as stream:
             merchants = {row["merchant_id"]: row for row in csv.DictReader(stream)}
+        with (data_dir / "items.csv").open(newline="", encoding="utf-8") as stream:
+            items = {row["item_id"]: row for row in csv.DictReader(stream)}
         approved: Counter = Counter()
         approved_devices: Counter = Counter()
         approved_daily_spend: Counter = Counter()
+        approved_merchant_times: dict[tuple[str, str], list[datetime]] = {}
+        approved_device_times: dict[tuple[str, str], list[datetime]] = {}
+        approved_country_times: dict[tuple[str, str], list[datetime]] = {}
         with (data_dir / "authorization_history.csv").open(
             newline="", encoding="utf-8"
         ) as stream:
             for row in csv.DictReader(stream):
                 if row["status"] == "approved" and row["transaction_type"] == "purchase":
+                    timestamp = datetime.fromisoformat(row["timestamp"].replace("Z", "+00:00"))
                     approved[row["card_id"], row["merchant_id"]] += 1
+                    approved_merchant_times.setdefault(
+                        (row["card_id"], row["merchant_id"]), []
+                    ).append(timestamp)
+                    approved_country_times.setdefault(
+                        (row["card_id"], row["merchant_country"]), []
+                    ).append(timestamp)
                     if row["customer_device_id"]:
                         approved_devices[row["card_id"], row["customer_device_id"]] += 1
+                        approved_device_times.setdefault(
+                            (row["card_id"], row["customer_device_id"]), []
+                        ).append(timestamp)
 
                 # A completed refund reverses spend.  Declines and pending-like
                 # attempts never enter this trusted, completed-spend context.
@@ -85,7 +108,16 @@ class MerchantHistory:
                     approved_daily_spend[row["card_id"], timestamp.date().isoformat()] += Decimal(
                         row["billing_amount_chf"]
                     )
-        return cls(merchants, approved, approved_devices, approved_daily_spend)
+        return cls(
+            merchants,
+            approved,
+            approved_devices,
+            approved_daily_spend,
+            items,
+            approved_merchant_times,
+            approved_device_times,
+            approved_country_times,
+        )
 
     def approved_device_count(self, card_id: str, device_id: str) -> int:
         """Return prior approved transactions for a card/device pair."""
@@ -96,6 +128,33 @@ class MerchantHistory:
         """Return dataset-backed completed spend for one card/calendar day."""
 
         return Decimal(self.approved_daily_spend[card_id, date])
+
+    def approved_merchant_count_before(
+        self, card_id: str, merchant_id: str, timestamp: str
+    ) -> int:
+        moment = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+        return sum(
+            approved_at < moment
+            for approved_at in self.approved_merchant_times.get((card_id, merchant_id), [])
+        )
+
+    def approved_device_count_before(
+        self, card_id: str, device_id: str, timestamp: str
+    ) -> int:
+        moment = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+        return sum(
+            approved_at < moment
+            for approved_at in self.approved_device_times.get((card_id, device_id), [])
+        )
+
+    def approved_country_count_before(
+        self, card_id: str, country: str, timestamp: str
+    ) -> int:
+        moment = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+        return sum(
+            approved_at < moment
+            for approved_at in self.approved_country_times.get((card_id, country), [])
+        )
 
 
 def evaluate_guard(

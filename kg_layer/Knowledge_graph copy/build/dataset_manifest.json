@@ -1,0 +1,85 @@
+{
+  "artifact_versions": {
+    "dataset_manifest": "dataset-manifest-v1",
+    "historical_evidence_index": "evidence-index-v1",
+    "policy_bindings": "policy-bindings-v1",
+    "precomputed_evidence": "evidence-v1",
+    "scenario_checkpoints": "scenario-checkpoints-v1",
+    "source_graph": "kg-v1"
+  },
+  "row_counts": {
+    "accounts": 31,
+    "authorization_history": 4701,
+    "cards": 41,
+    "customers": 20,
+    "fx_rates": 4,
+    "items": 66,
+    "merchants": 58,
+    "purchase_attempt_items": 56,
+    "purchase_attempts": 45,
+    "scenario_authorities": 5,
+    "scenario_catalogue": 5
+  },
+  "snapshot_id": "c3324c195100239a3beed827451c3667f29c83dff53842681e82aef5e8a8b4db",
+  "source_as_of": "2026-08-01T00:00:00Z",
+  "source_files": [
+    {
+      "path": "accounts.csv",
+      "sha256": "267fd41fb1c558956c9f32af6d5f9b6855039d3027f28372b9295b461e543769"
+    },
+    {
+      "path": "authorization_history.csv",
+      "sha256": "eb562bdc579204f25870b2ab4013d15a59f90733da0ad0d80b89949f29046168"
+    },
+    {
+      "path": "cards.csv",
+      "sha256": "50acf666bce48bb1cc7c321496dafbe684c7dd6605ab13cccb8f6624e2889809"
+    },
+    {
+      "path": "customers.csv",
+      "sha256": "abd11d15d5bc463a162e7ed4483704640c482de251e31b1788205ac3d6f71e00"
+    },
+    {
+      "path": "fx_rates.csv",
+      "sha256": "dcda0e834fa13671c5ae6b75df2843a44757829da08ddfc5395d6911fd4cde5b"
+    },
+    {
+      "path": "items.csv",
+      "sha256": "4702115a8afbb65b05372202eb561377877131fd118a202b408f18c5c3d149f4"
+    },
+    {
+      "path": "merchants.csv",
+      "sha256": "486215f7382138ec41969338a8016ecb6cc428ec62d10d4969fd91c56c5f64de"
+    },
+    {
+      "path": "purchase_attempt_items.csv",
+      "sha256": "31c73949765bb1f3f76d4e125790064962ec8b1f4dd6bc16cb3f405ee3a11cb9"
+    },
+    {
+      "path": "purchase_attempts.csv",
+      "sha256": "3335e12e2b8be6e289a838e3db74e3e88f3262c166ae62ead5930840e228c1b0"
+    },
+    {
+      "path": "scenario_authorities.csv",
+      "sha256": "e16b9ca3399b382e69c76c0ec3df3906f259e5e40590262741e0cc3672c2e3ea"
+    },
+    {
+      "path": "scenario_catalogue.csv",
+      "sha256": "82834634111cc1183ede31c48d4890a68fcdcd8efc61eee361a34fbd6c4bc3a4"
+    },
+    {
+      "path": "schemas/authorization_event.schema.json",
+      "sha256": "49a5c23d17d9599a5b49f531f465ad399a018fb2c1403a8a7884dea418c25832"
+    },
+    {
+      "path": "schemas/authorization_history.schema.json",
+      "sha256": "dc34a98467cddff5fff3fab450f75dab7efe302376ea3492739332a17e5bab60"
+    },
+    {
+      "path": "schemas/data_pack.schema.json",
+      "sha256": "224960181a4b32b149f56b88b3fd890cc84cc66035c6a120a6100b00c024b038"
+    }
+  ],
+  "source_release_id": "0193bec91c1c1842f45e4f0f54b0c6c7b3d781c5735f24c3567e05533606972a",
+  "version": "dataset-manifest-v1"
+}

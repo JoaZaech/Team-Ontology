@@ -1,0 +1,12 @@
+{
+  "dangling_relationships": [],
+  "duplicate_node_ids": 0,
+  "duplicate_relationship_ids": 0,
+  "invalid_provenance": [],
+  "node_count": 5132,
+  "relationship_count": 27792,
+  "represented_source_rows": 5032,
+  "source_row_count": 5032,
+  "unrepresented_rows": [],
+  "valid": true
+}

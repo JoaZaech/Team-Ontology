@@ -19,10 +19,10 @@ from typing import Any
 from urllib.parse import urlparse
 
 from decision_receipts import DecisionReceiptLedger, canonical_json
-from guardian import MerchantHistory
 from observability import Telemetry
-from rulebook import evaluate_request
-from wallet_policy import PolicyConflictError, PolicyValidationError, WalletPolicyStore
+from rule_client import PolicyConflictError, PolicyValidationError, RuleServiceClient
+from benchmark_mock import BenchmarkMockController, BenchmarkRunError
+from viseca_benchmark import VisecaBenchmark
 
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "viseca-2026" / "data"
@@ -30,9 +30,9 @@ MOCK_KEY = "mock-team-key"  # Public dummy value, only for local contract rehear
 MOCK_RUN_ID = "RUN_MOCK_0001"
 MOCK_AUTHORIZATION_ID = "MOCK_AU0001"
 
-# Built by the TypeScript/Vue app in decision-lab/ — run `npm run build` there after
-# changing the UI. This server only serves the resulting static files.
-DIST_DIR = Path(__file__).with_name("decision-lab") / "dist"
+# Built by the TypeScript/Vue app in live_layer/decision-lab/ — run `npm run build`
+# there after changing the UI. This server only serves the resulting static files.
+DIST_DIR = Path(__file__).resolve().parents[1] / "live_layer" / "decision-lab" / "dist"
 
 
 def _policy_hash(policy: dict[str, Any]) -> str:
@@ -130,13 +130,12 @@ class MockVisecaState:
     def __init__(
         self,
         data_dir: Path = DATA_DIR,
-        policy_store: WalletPolicyStore | None = None,
+        rule_client: RuleServiceClient | None = None,
         receipt_ledger: DecisionReceiptLedger | None = None,
         telemetry: Telemetry | None = None,
     ):
         self.data_dir = data_dir
-        self.history = MerchantHistory.from_data_dir(data_dir)
-        self.policy_store = policy_store or WalletPolicyStore()
+        self.rule_client = rule_client or RuleServiceClient()
         self.receipt_ledger = receipt_ledger or DecisionReceiptLedger(":memory:")
         self.telemetry = telemetry or Telemetry()
         self.delivered = False
@@ -147,6 +146,11 @@ class MockVisecaState:
         self.policy_snapshot: dict[str, Any] | None = None
         self.trace: Any | None = None
         self.step_up_recorded_at: datetime | None = None
+        self.benchmark_controller = BenchmarkMockController(
+            self.rule_client,
+            self.receipt_ledger,
+            VisecaBenchmark(data_dir),
+        )
 
     def close(self) -> None:
         self.receipt_ledger.close()
@@ -172,7 +176,7 @@ class MockVisecaState:
         self.delivered = True
         event = build_connection_event(self.data_dir, now=now)
         self.event = event
-        self.policy_snapshot = self.policy_store.get()
+        self.policy_snapshot = self.rule_client.get_policy()
         self.trace = self.telemetry.start_trace(event["request_id"])
         self.telemetry.event(
             "decision.request_received",
@@ -186,7 +190,33 @@ class MockVisecaState:
             "authorization_id": MOCK_AUTHORIZATION_ID,
             "status": "pending",
             "occurred_at": event["runtime"]["received_at"],
-            "data": event,
+            "data": {
+                **event,
+                "agent_proposal": {
+                    "summary": event["authorization"]["purchase_description"],
+                    "merchant_name": event["authorization"]["merchant"]["merchant_name"],
+                    "items": event["authorization"]["items"],
+                    "items_subtotal_chf": event["authorization"]["items_subtotal"],
+                    "delivery_fee_chf": event["authorization"]["delivery_fee"],
+                    "total_chf": event["authorization"]["billing_amount_chf"],
+                },
+                "applied_policies": {
+                    "confirmed_mandate": {
+                        "mandate_id": event["mandate"]["mandate_id"],
+                        "instruction": event["mandate"]["instruction"],
+                        "hard_rules": event["mandate"]["hard_rules"],
+                    },
+                    "wallet_policy": {
+                        "policy_id": self.policy_snapshot["policyId"],
+                        "revision": self.policy_snapshot["revision"],
+                        "enabled": self.policy_snapshot["enabled"],
+                        "daily_spending_limit_chf": self.policy_snapshot["dailySpendingLimitChf"],
+                        "adaptive_spend_profiles": self.policy_snapshot["adaptiveSpendProfiles"],
+                        "review_triggers": self.policy_snapshot["reviewTriggers"],
+                        "assistant_authority": self.policy_snapshot["assistantAuthority"],
+                    },
+                },
+            },
         }
 
     def evaluate(self) -> dict[str, Any]:
@@ -202,11 +232,7 @@ class MockVisecaState:
             trace=self.trace,
             labels={"component": "viseca_mock"},
         ):
-            result = evaluate_request(
-                self.event,
-                self.history,
-                wallet_policy=self.policy_snapshot,
-            )
+            result = self.rule_client.evaluate(self.event)["evaluation"]
         duration_ms = (time.perf_counter() - started) * 1000
         evaluated_at = _utc_now()
         authorization = self.event["authorization"]
@@ -480,9 +506,13 @@ def make_handler(state: MockVisecaState):
                                      "source": "viseca-2026/data", "scenario_id": "SCEN0000",
                                      "source_authorization_id": "AU0001"})
             elif path == "/mock/policy":
-                self.send_json(200, state.policy_store.get())
+                self.send_json(200, state.rule_client.get_policy())
             elif path == "/mock/observability":
                 self.send_json(200, state.telemetry.metrics_snapshot())
+            elif path == "/mock/benchmark/runs":
+                self.send_json(200, {"runs": state.benchmark_controller.summaries()})
+            elif path.startswith("/mock/benchmark/runs/"):
+                self._benchmark_get(path)
             elif path == "/v1/decision-requests/next":
                 event = state.next_request()
                 self.send_json(200, event) if event else self.send_response_only_204()
@@ -496,6 +526,12 @@ def make_handler(state: MockVisecaState):
             if path == "/mock/reset":
                 state.reset()
                 self.send_json(200, {"status": "reset", "run_id": MOCK_RUN_ID})
+                return
+            if path == "/mock/benchmark/runs":
+                self._benchmark_start()
+                return
+            if path.startswith("/mock/benchmark/runs/"):
+                self._benchmark_post(path)
                 return
             if path == "/mock/evaluate":
                 try:
@@ -530,10 +566,66 @@ def make_handler(state: MockVisecaState):
                 return
             try:
                 body = self.read_json_body()
-                self.send_json(200, state.policy_store.update(body))
+                self.send_json(200, state.rule_client.update_policy(body))
             except PolicyConflictError as exc:
                 self.send_json(409, {"error": str(exc)})
             except (PolicyValidationError, ValueError, json.JSONDecodeError) as exc:
+                self.send_json(400, {"error": str(exc)})
+
+        def _benchmark_start(self):
+            try:
+                body = self.read_json_body()
+                if not isinstance(body, dict) or set(body) != {"scenario_id"}:
+                    raise BenchmarkRunError("invalid_benchmark_run_request")
+                scenario_id = body["scenario_id"]
+                if scenario_id == "all":
+                    self.send_json(201, state.benchmark_controller.start_many(
+                        list(state.benchmark_controller.benchmark.scenario_ids())
+                    ))
+                elif isinstance(scenario_id, str):
+                    self.send_json(201, state.benchmark_controller.start(scenario_id))
+                else:
+                    raise BenchmarkRunError("invalid_benchmark_scenario")
+            except (BenchmarkRunError, ValueError, json.JSONDecodeError) as exc:
+                self.send_json(400, {"error": str(exc)})
+
+        def _benchmark_get(self, path: str):
+            parts = path.removeprefix("/mock/benchmark/runs/").split("/")
+            try:
+                if len(parts) == 1 and parts[0]:
+                    self.send_json(200, state.benchmark_controller.run(parts[0]).summary())
+                    return
+                if len(parts) == 2 and parts[0] and parts[1] == "next":
+                    envelope = state.benchmark_controller.run(parts[0]).next_request()
+                    self.send_json(200, envelope) if envelope else self.send_response_only_204()
+                    return
+            except BenchmarkRunError as exc:
+                self.send_json(404 if str(exc) == "unknown_run" else 400, {"error": str(exc)})
+                return
+            self.send_json(404, {"error": "not_found"})
+
+        def _benchmark_post(self, path: str):
+            parts = path.removeprefix("/mock/benchmark/runs/").split("/")
+            try:
+                if len(parts) == 2 and parts[0] and parts[1] == "evaluate":
+                    body = self.read_json_body()
+                    if body not in ({}, None):
+                        raise BenchmarkRunError("invalid_benchmark_evaluation_request")
+                    self.send_json(200, state.benchmark_controller.run(parts[0]).evaluate())
+                    return
+                if len(parts) == 4 and parts[0] and parts[1] == "authorizations" and parts[2]:
+                    body = self.read_json_body()
+                    run = state.benchmark_controller.run(parts[0])
+                    if parts[3] == "decision":
+                        self.send_json(200, run.record_decision(parts[2], body))
+                        return
+                    if parts[3] == "resolve":
+                        self.send_json(200, run.resolve_decision(parts[2], body))
+                        return
+                self.send_json(404, {"error": "not_found"})
+            except BenchmarkRunError as exc:
+                self.send_json(404 if str(exc) == "unknown_run" else 400, {"error": str(exc)})
+            except (ValueError, json.JSONDecodeError) as exc:
                 self.send_json(400, {"error": str(exc)})
 
         def authorized(self) -> bool:

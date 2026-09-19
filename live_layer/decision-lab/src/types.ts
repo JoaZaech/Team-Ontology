@@ -78,12 +78,48 @@ export interface Mandate {
   profile_id: string;
 }
 
+export interface PolicyRule {
+  field: string;
+  operator: string;
+  value: number | string | boolean;
+  currency?: string;
+  scope?: string;
+}
+
+export interface AgentProposal {
+  summary: string;
+  merchant_name: string;
+  items: OrderItem[];
+  items_subtotal_chf: number;
+  delivery_fee_chf: number;
+  total_chf: number;
+}
+
+export interface AppliedPolicies {
+  confirmed_mandate: {
+    mandate_id: string;
+    instruction: string;
+    hard_rules: PolicyRule[];
+  };
+  wallet_policy: {
+    policy_id: string;
+    revision: number;
+    enabled: boolean;
+    daily_spending_limit_chf: number;
+    adaptive_spend_profiles: Record<string, { maximumChf: number; typicalRange: string; explanation: string }>;
+    review_triggers: string[];
+    assistant_authority: string;
+  };
+}
+
 export interface DecisionRequestData {
   type: string;
   request_id: string;
   deadline_at: string;
   authorization: Authorization;
   mandate: Mandate;
+  agent_proposal: AgentProposal;
+  applied_policies: AppliedPolicies;
   context: { approved_spend_in_period_chf: number | null; recent_authorizations: RecentAuthorization[] };
   runtime: DecisionRuntime;
 }

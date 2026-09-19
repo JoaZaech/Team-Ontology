@@ -1,0 +1,22 @@
+{
+  "errors": [],
+  "money_unit": "integer minor units; *_chf fields are CHF cents",
+  "row_counts": {
+    "accounts": 31,
+    "authorization_history": 4701,
+    "cards": 41,
+    "customers": 20,
+    "fx_rates": 4,
+    "items": 66,
+    "merchants": 58,
+    "purchase_attempt_items": 56,
+    "purchase_attempts": 45,
+    "scenario_authorities": 5,
+    "scenario_catalogue": 5
+  },
+  "valid": true,
+  "warnings": [
+    "FX rates are synthetic fixed constants dated 2026-08-01; historical billing uses supplied billing amounts, never future FX lookup.",
+    "Static catalogue has no historical change log; time correctness is guaranteed for event evidence, not reconstructed catalogue versions."
+  ]
+}

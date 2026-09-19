@@ -1,0 +1,6 @@
+#precomputed-kg-explorer .kg-chain{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:16px 0;color:var(--muted-foreground)}
+#precomputed-kg-explorer .kg-graph{width:100%;display:block}
+#precomputed-kg-explorer .kg-graph text{fill:var(--foreground);font-size:12px}
+#precomputed-kg-explorer .kg-detail{margin-top:16px}
+#precomputed-kg-explorer .kg-events{overflow-wrap:anywhere;margin-top:8px}
+#precomputed-kg-explorer .kg-note{margin-top:8px}

@@ -1,4 +1,4 @@
-"""Local-only mock AI-agent entry point for the Viseca guardian."""
+"""Local-only mock AI-agent entry point. Delegates every decision to rule_service."""
 
 from __future__ import annotations
 
@@ -8,18 +8,16 @@ import time
 from datetime import datetime, timezone
 from collections import defaultdict
 import csv
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from hashlib import sha256
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 from urllib.parse import urlparse
 
 from decision_receipts import DecisionReceiptLedger, canonical_json
-from guardian import GuardPolicy, MerchantHistory, _money, evaluate_guard
 from observability import Telemetry
-from rulebook import evaluate_request
-from wallet_policy import PolicyConflictError, PolicyValidationError, WalletPolicyStore
+from rule_client import PolicyConflictError, PolicyValidationError, RuleServiceClient
 
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "viseca-2026" / "data"
@@ -31,16 +29,20 @@ class RequestError(Exception):
         self.code = code
 
 
-def _policy_hash(policy: GuardPolicy, dynamic_policy: dict[str, Any] | None = None) -> str:
+def _money(value: Any) -> Decimal:
+    try:
+        amount = Decimal(str(value))
+    except (InvalidOperation, TypeError, ValueError) as exc:
+        raise ValueError("amount must be numeric") from exc
+    if not amount.is_finite() or amount < 0:
+        raise ValueError("amount must be finite and non-negative")
+    return amount
+
+
+def _fixed_mandate_policy_hash(policy: Mapping[str, Any], dynamic_policy: dict[str, Any] | None = None) -> str:
     value = {
-        "max_purchase_chf": str(policy.max_purchase_chf) if policy.max_purchase_chf is not None else None,
-        "max_period_chf": str(policy.max_period_chf) if policy.max_period_chf is not None else None,
-        "approved_spend_in_period_chf": (
-            str(policy.approved_spend_in_period_chf)
-            if policy.approved_spend_in_period_chf is not None else None
-        ),
-        "require_familiar_merchant": policy.require_familiar_merchant,
-        "max_recent_attempts_10m": policy.max_recent_attempts_10m,
+        "max_purchase_chf": str(policy["max_purchase_chf"]) if policy.get("max_purchase_chf") is not None else None,
+        "require_familiar_merchant": policy.get("require_familiar_merchant", False),
     }
     value["dynamic_wallet_policy"] = dynamic_policy
     return sha256(canonical_json(value).encode("utf-8")).hexdigest()
@@ -48,6 +50,11 @@ def _policy_hash(policy: GuardPolicy, dynamic_policy: dict[str, Any] | None = No
 
 def _iso_time(timestamp: float) -> str:
     return datetime.fromtimestamp(timestamp, timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _load_merchant_catalogue(data_dir: Path) -> dict[str, dict[str, str]]:
+    with (data_dir / "merchants.csv").open(newline="", encoding="utf-8") as stream:
+        return {row["merchant_id"]: row for row in csv.DictReader(stream)}
 
 
 class MockAgentService:
@@ -58,22 +65,21 @@ class MockAgentService:
         data_dir: Path = DATA_DIR,
         receipt_ledger: DecisionReceiptLedger | None = None,
         telemetry: Telemetry | None = None,
-        policy_store: WalletPolicyStore | None = None,
+        rule_client: RuleServiceClient | None = None,
     ):
-        self.history = MerchantHistory.from_data_dir(data_dir)
+        self.merchants = _load_merchant_catalogue(data_dir)
         with (data_dir / "items.csv").open(newline="", encoding="utf-8") as stream:
             self.items = {row["item_id"]: row for row in csv.DictReader(stream)}
-        # This fixed mandate represents a policy confirmed outside the agent.
         self.policies = {
-            "TM_DEMO_GROCERY": ("CA0001", GuardPolicy(
-                max_purchase_chf=Decimal("20.00"), require_familiar_merchant=True
-            ))
+            "TM_DEMO_GROCERY": ("CA0001", {
+                "max_purchase_chf": Decimal("20.00"), "require_familiar_merchant": True,
+            })
         }
         self.seen: dict[str, tuple[str, dict[str, Any]]] = {}
         self.attempts: dict[tuple[str, str], list[float]] = defaultdict(list)
         self.receipt_ledger = receipt_ledger or DecisionReceiptLedger(":memory:")
         self.telemetry = telemetry or Telemetry()
-        self.policy_store = policy_store or WalletPolicyStore()
+        self.rule_client = rule_client or RuleServiceClient()
 
     def close(self) -> None:
         self.receipt_ledger.close()
@@ -81,12 +87,12 @@ class MockAgentService:
     def wallet_policy(self) -> dict[str, Any]:
         """Return the customer-controlled snapshot used for new requests."""
 
-        return self.policy_store.get()
+        return self.rule_client.get_policy()
 
     def update_wallet_policy(self, request: Any) -> dict[str, Any]:
         """Persist a versioned policy update before it can affect a decision."""
 
-        return self.policy_store.update(request)
+        return self.rule_client.update_policy(request)
 
     def _rulebook_event(
         self,
@@ -99,14 +105,15 @@ class MockAgentService:
         delivery: Decimal,
         recent_attempts: int,
         timestamp: float,
-        policy: GuardPolicy,
+        policy: Mapping[str, Any],
     ) -> dict[str, Any]:
         """Normalize an agent proposal into the trusted evaluator's event shape.
 
         The agent supplies IDs, quantities, and quoted prices.  Product and
         merchant facts are resolved from the Viseca data pack here, before the
-        rulebook sees the proposal.  Unknown item IDs are deliberately retained
-        as unknown facts so the policy engine can stop the grocery-only mandate.
+        rule service sees the proposal.  Unknown item IDs are deliberately
+        retained as unknown facts so the policy engine can stop the
+        grocery-only mandate.
         """
 
         items: list[dict[str, Any]] = []
@@ -124,7 +131,7 @@ class MockAgentService:
             })
         event_time = _iso_time(timestamp)
         subtotal = total - delivery
-        limit = policy.max_purchase_chf
+        limit = policy.get("max_purchase_chf")
         hard_rules: list[dict[str, Any]] = []
         if limit is not None:
             hard_rules.append({
@@ -267,7 +274,7 @@ class MockAgentService:
                 with self.telemetry.span("decision.context", trace=trace, labels={"component": "mock_api"}):
                     recent = [t for t in self.attempts[key] if timestamp - 600 < t <= timestamp]
                     self.attempts[key] = recent
-                    merchant = self.history.merchants.get(merchant_id)
+                    merchant = self.merchants.get(merchant_id)
                     if merchant is None:
                         merchant = {"merchant_id": merchant_id}
                 self.telemetry.event(
@@ -286,15 +293,15 @@ class MockAgentService:
                     timestamp=timestamp,
                     policy=policy,
                 )
-                policy_snapshot = self.policy_store.get()
                 started = time.perf_counter()
                 with self.telemetry.span("decision.evaluate", trace=trace, labels={"component": "mock_api"}):
-                    guard = evaluate_guard(event, self.history, policy)
-                    evaluation = evaluate_request(
-                        event,
-                        self.history,
-                        wallet_policy=policy_snapshot,
-                    )
+                    guard = self.rule_client.guard(event, {
+                        "max_purchase_chf": str(policy["max_purchase_chf"]),
+                        "require_familiar_merchant": policy["require_familiar_merchant"],
+                    })
+                    evaluated = self.rule_client.evaluate(event)
+                    evaluation = evaluated["evaluation"]
+                    policy_snapshot = evaluated["policy_snapshot"]
                 duration_ms = (time.perf_counter() - started) * 1000
                 self.telemetry.event(
                     "decision.evaluated",
@@ -306,7 +313,7 @@ class MockAgentService:
                         authorization_id=request_id,
                         idempotency_key=f"mock-agent:{request_id}",
                         decision=evaluation["recommended_decision"],
-                        policy_hash=_policy_hash(policy, policy_snapshot),
+                        policy_hash=_fixed_mandate_policy_hash(policy, policy_snapshot),
                         policy_version=f"{mandate_id}:dynamic-{policy_snapshot['revision']}",
                         engine_version=evaluation["engine_version"],
                         reason_codes=evaluation["reason_codes"],
@@ -333,7 +340,7 @@ class MockAgentService:
                     "policy_snapshot": policy_snapshot,
                     "decision_receipt_hash": receipt["receipt_hash"],
                     "payment_authorized": False,
-                    "message": "The deterministic rulebook evaluated the confirmed policy. This local mock does not initiate a payment.",
+                    "message": "The deterministic rule service evaluated the confirmed policy. This local mock does not initiate a payment.",
                 }
                 self.attempts[key].append(timestamp)
                 self.seen[request_id] = (fingerprint, response)

@@ -84,6 +84,47 @@ export const FIXTURE_ENVELOPE: DecisionEnvelope = {
       uncertainty_policy: "ask",
       profile_id: "PROFILE_MOCK_0001",
     },
+    agent_proposal: {
+      summary: "Grocery delivery order",
+      merchant_name: "Alpine Basket",
+      items: [{
+        line_no: 1,
+        item_id: "IT0001",
+        item_name: "Fresh produce selection",
+        item_category: "groceries",
+        item_details: "One small basket of seasonal fruit and vegetables",
+        quantity: 1,
+        unit_price: 13.0,
+        currency: "CHF",
+      }],
+      items_subtotal_chf: 13.0,
+      delivery_fee_chf: 7.0,
+      total_chf: 20.0,
+    },
+    applied_policies: {
+      confirmed_mandate: {
+        mandate_id: "TM_MOCK_0001",
+        instruction: "Buy one ordinary grocery item for CHF 20 or less from a shop I use regularly. Ask me when uncertain.",
+        hard_rules: [{
+          field: "authorization.billing_amount_chf",
+          operator: "<=",
+          value: 20,
+          currency: "CHF",
+          scope: "purchase",
+        }],
+      },
+      wallet_policy: {
+        policy_id: "wallet-policy_CA0001_default",
+        revision: 1,
+        enabled: true,
+        daily_spending_limit_chf: 1500,
+        adaptive_spend_profiles: {
+          Groceries: { maximumChf: 180, typicalRange: "CHF 35-180", explanation: "Derived from supplied card history." },
+        },
+        review_triggers: ["new_merchant"],
+        assistant_authority: "trusted",
+      },
+    },
     context: { approved_spend_in_period_chf: 0.0, recent_authorizations: [] },
     runtime: {
       received_at: "2026-08-09T10:04:00Z",
@@ -173,6 +214,22 @@ const DECLINE_ENVELOPE: DecisionEnvelope = {
         currency: "CHF",
       }],
     },
+    agent_proposal: {
+      ...FIXTURE_ENVELOPE.data.agent_proposal,
+      summary: "Large grocery delivery order",
+      items: [{
+        line_no: 1,
+        item_id: "IT0002",
+        item_name: "Family grocery basket",
+        item_category: "groceries",
+        item_details: "A larger basket of household groceries",
+        quantity: 1,
+        unit_price: 39,
+        currency: "CHF",
+      }],
+      items_subtotal_chf: 39,
+      total_chf: 46,
+    },
   },
 };
 
@@ -238,6 +295,10 @@ const REVIEW_ENVELOPE: DecisionEnvelope = {
         merchant_name: "Fresh Basket Direct",
         merchant_city: "Bern",
       },
+    },
+    agent_proposal: {
+      ...FIXTURE_ENVELOPE.data.agent_proposal,
+      merchant_name: "Fresh Basket Direct",
     },
   },
 };
