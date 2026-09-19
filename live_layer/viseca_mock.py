@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import csv
 import json
+import mimetypes
 from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
@@ -23,7 +24,9 @@ MOCK_KEY = "mock-team-key"  # Public dummy value, only for local contract rehear
 MOCK_RUN_ID = "RUN_MOCK_0001"
 MOCK_AUTHORIZATION_ID = "MOCK_AU0001"
 
-DEMO_PAGE = Path(__file__).with_name("mock_ui.html").read_text(encoding="utf-8")
+# Built by the TypeScript/Vue app in decision-lab/ — run `npm run build` there after
+# changing the UI. This server only serves the resulting static files.
+DIST_DIR = Path(__file__).with_name("decision-lab") / "dist"
 
 
 def _csv_row(path: Path, key: str, value: str) -> dict[str, str]:
@@ -154,11 +157,14 @@ def make_handler(state: MockVisecaState):
         def do_GET(self):
             path = urlparse(self.path).path
             if path == "/":
-                self.send_html(200, DEMO_PAGE)
+                self.send_static_file(DIST_DIR / "index.html")
                 return
             if path == "/healthz":
                 self.send_json(200, {"status": "ok", "service": "local-viseca-mock",
                                      "pack_version": "saw26"})
+                return
+            if path.startswith("/assets/"):
+                self.send_static_file(DIST_DIR / path.lstrip("/"))
                 return
             if not self.authorized():
                 return
@@ -218,10 +224,19 @@ def make_handler(state: MockVisecaState):
             self.end_headers()
             self.wfile.write(payload)
 
-        def send_html(self, status: int, html: str):
-            payload = html.encode("utf-8")
-            self.send_response(status)
-            self.send_header("Content-Type", "text/html; charset=utf-8")
+        def send_static_file(self, file_path: Path):
+            resolved = file_path.resolve()
+            if DIST_DIR.resolve() not in resolved.parents and resolved != DIST_DIR.resolve():
+                self.send_json(404, {"error": "not_found"})
+                return
+            if not resolved.is_file():
+                self.send_json(404, {"error": "not_found",
+                                     "hint": "Run 'npm run build' in live_layer/decision-lab first."})
+                return
+            content_type = mimetypes.guess_type(resolved.name)[0] or "application/octet-stream"
+            payload = resolved.read_bytes()
+            self.send_response(200)
+            self.send_header("Content-Type", content_type)
             self.send_header("Content-Length", str(len(payload)))
             self.end_headers()
             self.wfile.write(payload)

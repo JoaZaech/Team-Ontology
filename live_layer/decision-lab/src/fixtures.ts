@@ -1,0 +1,140 @@
+import type { DecisionEnvelope, EvaluationResult } from "./types";
+
+/**
+ * Static copy of the company's SCEN0000 / AU0001 connection-check fixture and
+ * its rulebook evaluation. This app makes no network calls — the values below
+ * mirror exactly what `live_layer/viseca_mock.py` + `rulebook.py` compute for
+ * that one fixture, captured once so the demo can run as pure static files.
+ */
+export const AUTHORIZATION_ID = "MOCK_AU0001";
+
+export const FIXTURE_ENVELOPE: DecisionEnvelope = {
+  run_id: "RUN_MOCK_0001",
+  event_id: "EVT_MOCK_0001",
+  type: "authorization.request",
+  authorization_id: AUTHORIZATION_ID,
+  status: "pending",
+  occurred_at: "2026-08-09T10:04:00Z",
+  data: {
+    type: "authorization.request",
+    request_id: "req_mock_0001",
+    deadline_at: "2026-08-09T10:04:08Z",
+    authorization: {
+      authorization_id: AUTHORIZATION_ID,
+      source_authorization_id: "AU0001",
+      scenario_id: "SCEN0000",
+      replay_order: 1,
+      mandate_id: "TM_MOCK_0001",
+      profile_id: "PROFILE_MOCK_0001",
+      card_id: "CA0001",
+      initiator_type: "agent",
+      merchant: {
+        merchant_id: "ME0001",
+        merchant_name: "Alpine Basket",
+        merchant_category: "groceries",
+        merchant_mcc: "5411",
+        merchant_country: "CH",
+        merchant_city: "Zurich",
+        availability: "store_and_online",
+        recurring_capable: "false",
+      },
+      timestamp: "2026-08-09T10:04:00Z",
+      amount: 20.0,
+      currency: "CHF",
+      billing_amount_chf: 20.0,
+      items_subtotal: 13.0,
+      delivery_fee: 7.0,
+      channel: "ecommerce",
+      customer_device_id: "DVC-13A598",
+      authority_status: "active",
+      card_status_at_attempt: "active",
+      fulfillment_method: "delivery",
+      delivery_by: "2026-08-10",
+      order_returnable: "false",
+      order_cancellable: "unknown",
+      purchase_description: "Grocery delivery order",
+      items: [
+        {
+          line_no: 1,
+          item_id: "IT0001",
+          item_name: "Fresh produce selection",
+          item_category: "groceries",
+          item_details: "One small basket of seasonal fruit and vegetables",
+          quantity: 1,
+          unit_price: 13.0,
+          currency: "CHF",
+        },
+      ],
+    },
+    mandate: {
+      mandate_id: "TM_MOCK_0001",
+      status: "active",
+      customer_id: "CU0001",
+      card_id: "CA0001",
+      instruction:
+        "Buy one ordinary grocery item for CHF 20 or less from a shop I use regularly. Ask me when uncertain.",
+      hard_rules: [
+        {
+          field: "authorization.billing_amount_chf",
+          operator: "<=",
+          value: 20,
+          currency: "CHF",
+          scope: "purchase",
+        },
+      ],
+      uncertainty_policy: "ask",
+      profile_id: "PROFILE_MOCK_0001",
+    },
+    context: { approved_spend_in_period_chf: 0.0, recent_authorizations: [] },
+    runtime: {
+      received_at: "2026-08-09T10:04:00Z",
+      history_window_minutes: 10,
+      context_basis: "run_decisions_and_scenario_timestamps",
+    },
+  },
+};
+
+export const FIXTURE_EVALUATION: EvaluationResult = {
+  authorization_id: AUTHORIZATION_ID,
+  recommended_decision: "approve",
+  reason_codes: [],
+  checks: [
+    {
+      name: "buyer authority",
+      outcome: "pass",
+      reason_code: "buyer_authorized",
+      detail: "The active mandate is bound to this card.",
+    },
+    {
+      name: "requested basket",
+      outcome: "pass",
+      reason_code: "basket_matches_instruction",
+      detail: "The order contains one grocery item.",
+    },
+    {
+      name: "order total",
+      outcome: "pass",
+      reason_code: "order_total_verified",
+      detail: "CHF 13.00 in items plus CHF 7.00 delivery.",
+    },
+    {
+      name: "Spend limit",
+      outcome: "pass",
+      reason_code: "purchase_within_limit",
+      detail: "CHF 20.00 is within the CHF 20.00 purchase limit.",
+    },
+    {
+      name: "Merchant familiarity",
+      outcome: "pass",
+      reason_code: "merchant_catalogue_match",
+      detail: "Alpine Basket matches the catalogue; this card has 26 prior approved purchases there.",
+    },
+    {
+      name: "Recent attempts",
+      outcome: "pass",
+      reason_code: "attempt_velocity_normal",
+      detail: "0 earlier attempts in ten minutes; review starts at 3.",
+    },
+  ],
+  engine_version: "viseca-mock-rulebook-v1",
+};

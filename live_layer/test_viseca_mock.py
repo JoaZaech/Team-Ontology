@@ -1,11 +1,12 @@
 import json
+import re
 import unittest
 from datetime import datetime, timezone
 from decimal import Decimal
 from pathlib import Path
 
 from guardian import GuardPolicy, MerchantHistory, evaluate_guard
-from viseca_mock import DEMO_PAGE, MOCK_AUTHORIZATION_ID, MockVisecaState, build_connection_event
+from viseca_mock import DIST_DIR, MOCK_AUTHORIZATION_ID, MockVisecaState, build_connection_event
 
 
 DATA = Path(__file__).resolve().parents[1] / "viseca-2026" / "data"
@@ -55,11 +56,21 @@ class VisecaMockTests(unittest.TestCase):
         self.assertIsNone(state.decision)
         self.assertIsNotNone(state.next_request())
 
-    def test_root_page_explains_the_local_demo(self):
-        self.assertIn("Decision Lab", DEMO_PAGE)
-        self.assertIn("/v1/decision-requests/next?wait=0", DEMO_PAGE)
-        self.assertIn("/mock/evaluate", DEMO_PAGE)
-        self.assertIn("/mock/reset", DEMO_PAGE)
+    def test_root_page_serves_the_built_decision_lab_app(self):
+        # decision-lab/ is a standalone static UI rehearsal: its SCEN0000 fixture
+        # is baked into the bundle at build time and it makes no calls back to
+        # this server, so this only checks the build exists and embeds that data.
+        index_path = DIST_DIR / "index.html"
+        if not index_path.is_file():
+            self.skipTest("Run 'npm run build' in live_layer/decision-lab first.")
+        index_html = index_path.read_text(encoding="utf-8")
+        self.assertIn("Viseca Decision Lab", index_html)
+        script_names = re.findall(r'src="(/assets/[^"]+\.js)"', index_html)
+        self.assertTrue(script_names, "expected a built module script reference in dist/index.html")
+        bundle = (DIST_DIR / script_names[0].lstrip("/")).read_text(encoding="utf-8")
+        self.assertIn("MOCK_AU0001", bundle)
+        self.assertIn("Alpine Basket", bundle)
+        self.assertIn("viseca-mock-rulebook-v1", bundle)
 
 
 if __name__ == "__main__":

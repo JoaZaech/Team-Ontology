@@ -82,21 +82,35 @@ proposal. For a **Viseca-shaped API flow**, run `viseca_mock.py`. It reads the
 company's `SCEN0000` / `AU0001` fixture and builds the complete live event
 shape defined in `authorization_event.schema.json`, with a fresh mock deadline.
 
-In terminal 1:
+The interactive demo page (`decision-lab/`) is a standalone Vue 3 + TypeScript
+app built with Vite. It is fully static: the SCEN0000 / AU0001 fixture and its
+rulebook evaluation are baked into `src/fixtures.ts` at build time, so the
+running page makes **no network calls at all** — it does not talk to
+`viseca_mock.py` or any server. Build and serve it with:
+
+```bash
+cd live_layer/decision-lab
+npm install
+npm run build
+python3 -m http.server 8090 --directory dist --bind 127.0.0.1
+```
+
+Open `http://127.0.0.1:8090/` in a browser. Use **Pull request**, **Evaluate
+request**, then choose **Approved**, **Not approved**, or **Human requested**
+and press the green **Submit decision** button. The rulebook recommends
+approval for the valid `SCEN0000` purchase and shows each check. The page
+blurs the checks while evaluation runs. **Reset demo** replays the one
+purchase. Since everything runs client-side from the bundled fixture, refreshing
+the page also resets it. For UI development with hot reload, run `npm run dev`
+inside `decision-lab/` instead. This static page is a UI rehearsal only; it
+does not exercise `viseca_mock.py`'s actual API contract.
+
+To rehearse the **Viseca-shaped API itself** (separate from the browser demo
+above), run `viseca_mock.py` in terminal 1:
 
 ```bash
 python3 -B live_layer/viseca_mock.py
 ```
-
-Open `http://127.0.0.1:8082/` in a browser for the interactive demo. The mock
-server must stay running in terminal 1 while the page is open. Use **Pull
-request**, **Evaluate request**, then choose **Approved**, **Not approved**, or
-**Human requested** and press the green **Submit decision** button. The rulebook
-recommends approval for the valid `SCEN0000` purchase and shows each check.
-The page blurs the checks while evaluation runs. **Reset demo** replays the one
-purchase without restarting the server. The customer-facing choice is a local
-demonstration; the hosted API still requires a confirmed mandate and its own
-decision worker.
 
 In terminal 2, from the repository root:
 
