@@ -76,27 +76,11 @@ const status = computed(() => {
       summary: "Nothing was approved or recorded. You can check the purchase again.",
     };
   }
-  if (props.stage === "combine") {
-    return {
-      tone: "processing",
-      kicker: "CREATING A CLEAR DECISION",
-      title: "Bringing the checks together.",
-      summary: "We are turning the policy and context checks into one clear outcome.",
-    };
-  }
-  if (props.stage === "analysis") {
-    return {
-      tone: "processing",
-      kicker: "CHECKING THE PURCHASE",
-      title: "Comparing it with your saved policy.",
-      summary: "We are checking the basket, amount, merchant and recent purchase activity.",
-    };
-  }
   return {
     tone: "processing",
-    kicker: "PURCHASE RECEIVED",
-    title: "Preparing a clear decision.",
-    summary: "We will show what was checked, why it mattered and what happens next.",
+    kicker: "CHECKING THIS PURCHASE",
+    title: "Comparing it with your wallet policy.",
+    summary: "The outcome and the reasons behind it will appear here. Each check below fills in as it completes.",
   };
 });
 
@@ -191,6 +175,10 @@ const trace = computed<TraceItem[]>(() => [
 ]);
 
 const activeItem = computed(() => trace.value.find((item) => item.id === activeTrace.value) ?? trace.value[0]);
+const evidenceKey = computed(() => {
+  if (activeTrace.value !== "decision") return activeTrace.value;
+  return ["approved", "declined", "review", "error"].includes(props.stage) ? `decision-${props.stage}` : "decision-working";
+});
 const activeChecks = computed(() => {
   if (activeTrace.value === "policy") return policyChecks.value;
   if (activeTrace.value === "context") return contextChecks.value;
@@ -247,7 +235,7 @@ watch(
   () => props.stage,
   (stage) => {
     if (stage === "analysis") activeTrace.value = "policy";
-    if (["combine", "approved", "declined", "review", "error"].includes(stage)) activeTrace.value = "decision";
+    if (["approved", "declined", "review", "error"].includes(stage)) activeTrace.value = "decision";
   },
 );
 
@@ -334,15 +322,17 @@ function formatTime(value: string | undefined): string {
 </script>
 
 <template>
-  <section class="decision-receipt" :class="`decision-receipt--${status.tone}`" aria-labelledby="decision-receipt-title" aria-live="polite">
+  <section class="decision-receipt" :class="`decision-receipt--${status.tone}`" aria-labelledby="decision-receipt-title">
     <header class="decision-receipt__hero">
-      <div class="decision-receipt__outcome">
+      <div class="decision-receipt__outcome" aria-live="polite" aria-atomic="true">
         <span class="decision-receipt__mark" aria-hidden="true">{{ stateIcon(trace.find((item) => item.id === "decision")?.state ?? "waiting") }}</span>
-        <div>
-          <p>{{ status.kicker }}</p>
-          <h2 id="decision-receipt-title">{{ status.title }}</h2>
-          <span>{{ status.summary }}</span>
-        </div>
+        <Transition name="copy-swap" mode="out-in">
+          <div :key="status.title">
+            <p>{{ status.kicker }}</p>
+            <h2 id="decision-receipt-title">{{ status.title }}</h2>
+            <span>{{ status.summary }}</span>
+          </div>
+        </Transition>
       </div>
 
       <dl v-if="authorization" class="decision-receipt__purchase">
@@ -357,12 +347,16 @@ function formatTime(value: string | undefined): string {
     </header>
 
     <section class="decision-receipt__reason" aria-labelledby="decision-reason-title">
-      <div>
-        <p>{{ primaryReason.label }}</p>
-        <h3 id="decision-reason-title">{{ primaryReason.title }}</h3>
-        <span>{{ primaryReason.detail }}</span>
-      </div>
-      <small><strong>Evidence source</strong>{{ primaryReason.source }}</small>
+      <Transition name="copy-swap" mode="out-in">
+        <div class="decision-receipt__reason-inner" :key="primaryReason.title">
+          <div>
+            <p>{{ primaryReason.label }}</p>
+            <h3 id="decision-reason-title">{{ primaryReason.title }}</h3>
+            <span>{{ primaryReason.detail }}</span>
+          </div>
+          <small><strong>Evidence source</strong>{{ primaryReason.source }}</small>
+        </div>
+      </Transition>
     </section>
 
     <section class="decision-receipt__trace" aria-labelledby="decision-trace-title">
@@ -376,34 +370,42 @@ function formatTime(value: string | undefined): string {
           <button type="button" :aria-expanded="activeTrace === item.id" @click="activeTrace = item.id">
             <span class="decision-receipt__step-mark" aria-hidden="true">{{ stateIcon(item.state) }}</span>
             <span class="decision-receipt__step-copy"><strong>{{ item.label }}</strong><small>{{ item.helper }}</small></span>
-            <span class="decision-receipt__step-result">{{ item.result }}</span>
+              <Transition name="copy-fade" mode="out-in">
+              <span class="decision-receipt__step-result" :key="item.result">{{ item.result }}</span>
+            </Transition>
           </button>
         </li>
       </ol>
 
       <div class="decision-receipt__evidence" :aria-label="`${activeItem.label} details`">
-        <div>
-          <p>{{ activeItem.label }}</p>
-          <span v-if="activeTrace === 'request'">We use the proposed basket, merchant, amount and the policy snapshot that was active when this purchase arrived.</span>
-          <span v-else-if="activeTrace === 'decision' && stage === 'approved'">{{ approvedByCustomer ? "You confirmed the purchase after it was paused for review. Your approval is now recorded." : "Every applicable check passed, so the approval was recorded automatically." }}</span>
-          <span v-else-if="activeTrace === 'decision' && stage === 'declined'">{{ declinedByCustomer ? "You chose not to approve the purchase after it was paused for review. Your decision is now recorded." : "A failed rule stopped the payment. The reason remains attached to this receipt." }}</span>
-          <span v-else-if="activeTrace === 'decision' && stage === 'review'">The system could not safely finish on its own. Your choice will be the final decision.</span>
-          <span v-else-if="activeTrace === 'decision' && stage === 'error'">A decision record was not created, so the payment remains unapproved.</span>
-          <span v-else-if="activeTrace === 'decision'">We are combining the completed checks into one outcome.</span>
-          <span v-else>Each check shows the result, a plain-language explanation and where that evidence came from.</span>
-        </div>
+        <Transition name="copy-swap" mode="out-in">
+          <div :key="evidenceKey">
+            <p>{{ activeItem.label }}</p>
+            <span v-if="activeTrace === 'request'">We use the proposed basket, merchant, amount and the policy snapshot that was active when this purchase arrived.</span>
+            <span v-else-if="activeTrace === 'decision' && stage === 'approved'">{{ approvedByCustomer ? "You confirmed the purchase after it was paused for review. Your approval is now recorded." : "Every applicable check passed, so the approval was recorded automatically." }}</span>
+            <span v-else-if="activeTrace === 'decision' && stage === 'declined'">{{ declinedByCustomer ? "You chose not to approve the purchase after it was paused for review. Your decision is now recorded." : "A failed rule stopped the payment. The reason remains attached to this receipt." }}</span>
+            <span v-else-if="activeTrace === 'decision' && stage === 'review'">The system could not safely finish on its own. Your choice will be the final decision.</span>
+            <span v-else-if="activeTrace === 'decision' && stage === 'error'">A decision record was not created, so the payment remains unapproved.</span>
+            <span v-else-if="activeTrace === 'decision'">We are combining the completed checks into one outcome.</span>
+            <span v-else>Each check shows the result, a plain-language explanation and where that evidence came from.</span>
+          </div>
+        </Transition>
 
-        <ul v-if="activeChecks.length">
-          <li v-for="check in activeChecks" :key="check.name" :class="`is-${check.outcome}`">
-            <span aria-hidden="true">{{ check.outcome === "pass" ? "✓" : check.outcome === "fail" ? "×" : "!" }}</span>
-            <div><strong>{{ check.name }}</strong><p>{{ check.detail }}</p><small>{{ sourceFor(check) }}</small></div>
-          </li>
-        </ul>
+        <Transition name="copy-fade" mode="out-in">
+          <ul v-if="activeChecks.length" :key="activeTrace">
+            <li v-for="check in activeChecks" :key="check.name" :class="`is-${check.outcome}`">
+              <span aria-hidden="true">{{ check.outcome === "pass" ? "✓" : check.outcome === "fail" ? "×" : "!" }}</span>
+              <div><strong>{{ check.name }}</strong><p>{{ check.detail }}</p><small>{{ sourceFor(check) }}</small></div>
+            </li>
+          </ul>
+        </Transition>
       </div>
     </section>
 
     <section class="decision-receipt__next" :class="`is-${status.tone}`" aria-labelledby="decision-next-title">
-      <div><p>{{ nextStep.label }}</p><h3 id="decision-next-title">{{ nextStep.title }}</h3><span>{{ nextStep.detail }}</span></div>
+      <Transition name="copy-swap" mode="out-in">
+        <div class="decision-receipt__next-copy" :key="nextStep.title"><p>{{ nextStep.label }}</p><h3 id="decision-next-title">{{ nextStep.title }}</h3><span>{{ nextStep.detail }}</span></div>
+      </Transition>
       <button v-if="stage === 'error'" type="button" @click="emit('retry')">Check purchase again</button>
     </section>
 

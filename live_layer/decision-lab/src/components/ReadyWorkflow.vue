@@ -23,61 +23,6 @@ const declineButton = ref<HTMLButtonElement | null>(null);
 let mounted = true;
 let runSequence = 0;
 
-const stageCopy: Record<FlowStage, { badge: string; headline: string; body: string }> = {
-  request: {
-    badge: "PURCHASE RECEIVED",
-    headline: "A clear answer is on its way.",
-    body: "We will show the outcome, its reason and the evidence used to reach it in one receipt.",
-  },
-  analysis: {
-    badge: "CHECKING YOUR POLICY",
-    headline: "Comparing this purchase with your rules.",
-    body: "We check card authority, the basket, amount, merchant history and recent activity before a payment can continue.",
-  },
-  combine: {
-    badge: "CREATING A DECISION",
-    headline: "Turning the checks into one clear outcome.",
-    body: "Every completed check stays visible, so you can see why the purchase was approved, declined or paused for you.",
-  },
-  approved: {
-    badge: "DECISION RECEIPT",
-    headline: "Approved. Ready to continue.",
-    body: "The purchase followed your saved wallet policy and the approval has been recorded with its evidence.",
-  },
-  declined: {
-    badge: "DECISION RECEIPT",
-    headline: "Declined. No payment was approved.",
-    body: "The reason and every completed safeguard remain visible, so the result is easy to understand and review.",
-  },
-  review: {
-    badge: "YOUR DECISION",
-    headline: "This purchase needs your approval.",
-    body: "The automated process has paused. It will not decide for you while a fact still needs confirmation.",
-  },
-  error: {
-    badge: "SAFE PAUSE",
-    headline: "We could not complete this decision.",
-    body: "Nothing was approved or recorded. You can safely check the purchase again when the decision service is available.",
-  },
-};
-
-const currentCopy = computed(() => {
-  if (stage.value === "approved" && approvedByCustomer.value) {
-    return {
-      badge: "DECISION RECEIPT",
-      headline: "Approved. You confirmed this purchase.",
-      body: "The automated process paused for you, and your approval has been recorded as the final decision.",
-    };
-  }
-  if (stage.value === "declined" && declinedByCustomer.value) {
-    return {
-      badge: "DECISION RECEIPT",
-      headline: "Declined. You chose not to approve it.",
-      body: "Your choice safely stopped the payment and has been recorded with the reason for the review.",
-    };
-  }
-  return stageCopy[stage.value];
-});
 const failedChecks = computed(() => evaluation.value?.checks.filter((check) => check.outcome === "fail") ?? []);
 const reviewChecks = computed(() => evaluation.value?.checks.filter((check) => check.outcome === "review") ?? []);
 const authorization = computed(() => purchase.value?.data.authorization ?? null);
@@ -201,9 +146,9 @@ onBeforeUnmount(() => {
     </header>
 
     <section class="ready-page__intro" aria-labelledby="workflow-title">
-      <p class="ready-page__eyebrow">{{ currentCopy.badge }}</p>
-      <h1 id="workflow-title">{{ currentCopy.headline }}</h1>
-      <p>{{ currentCopy.body }}</p>
+      <p class="ready-page__eyebrow">WALLET DECISION</p>
+      <h1 id="workflow-title">A clear answer, with the reasons behind it.</h1>
+      <p>Every purchase is checked against your saved wallet policy. The outcome, why it was reached and the evidence behind it stay together in one receipt.</p>
     </section>
 
     <DecisionReceipt
