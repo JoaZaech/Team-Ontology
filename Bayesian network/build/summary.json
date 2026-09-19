@@ -1,0 +1,48 @@
+{
+  "version": "replay-1",
+  "config_hash": "e0f7d44ae6b96e3aba81f74703e1d99691a71c02c2a6b5b55880e9e886f229c3",
+  "mode": "synthetic_retrospective",
+  "historical_purchase_count": 4565,
+  "unscored_nonpurchase_count": 136,
+  "historical_original_outcomes": {
+    "declined": 258,
+    "approved": 4307
+  },
+  "historical_recommendations": {
+    "step_up": 360,
+    "approve": 4205
+  },
+  "scenario_recommendations": {
+    "step_up": 35,
+    "approve": 5,
+    "decline": 5
+  },
+  "reasons": {
+    "MISSING_REQUIRED_EVIDENCE": 227,
+    "PROTOTYPE_MODEL_POLICY": 4343,
+    "RULES_UNAVAILABLE": 35,
+    "HARD_RULE_VIOLATION": 5
+  },
+  "modeled_count": 4343,
+  "sensitivity_changes": 72,
+  "independent_recomputation_matches": 4610,
+  "invalid_graph_paths": 0,
+  "receipt_database": "receipts-1789797936531545000.sqlite",
+  "same_key_replay_matches": 4610,
+  "request_count": 4610,
+  "temporal_violations": 0,
+  "provenance_paths_checked": 139811,
+  "latency_ms": {
+    "median": 7.9867500000005975,
+    "p95": 16.57600000000059,
+    "maximum": 95.1069169999954
+  },
+  "limitations": [
+    "Expert probabilities, not calibrated fraud scores or historical decline reasons.",
+    "Fixture known_at and coverage are assumptions.",
+    "Historical rule eligibility is an analytical assumption.",
+    "SCEN0001 uses the existing simulation hard policy; other scenario mandates are unavailable and step up.",
+    "Historical cash/refunds supply context but only purchase requests are scored.",
+    "Durable complete receipts are in the named local SQLite file; this report contains portable compact explanations."
+  ]
+}

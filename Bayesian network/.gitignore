@@ -1,0 +1,3 @@
+# Runtime audit databases stay local; portable JSON/HTML reports are shareable.
+build/*.sqlite
+build/*.sqlite-*

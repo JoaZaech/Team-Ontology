@@ -1,0 +1,1006 @@
+{
+  "normal": {
+    "version": "bayesian-prototype-1",
+    "scope": "e3fac1d6e3f06607a1e7d5078ee6ea6d66dfe7a2f5741dbc456a4aa23a367c0a",
+    "request": {
+      "tenant": "demo",
+      "run": "acceptance",
+      "transaction_id": "DEMO",
+      "idempotency_key": "normal",
+      "customer_id": "CU",
+      "card_id": "CA",
+      "merchant_id": "ME",
+      "country": "CH",
+      "channel": "ecommerce",
+      "device_id": "D",
+      "amount_cents": 1000,
+      "transaction_time": "2026-02-01T12:00:00+00:00",
+      "decision_time": "2026-02-01T12:00:00+00:00",
+      "mode": "synthetic_retrospective",
+      "authority_id": "AUTH",
+      "transaction_type": "purchase"
+    },
+    "input_hash": "2c02996d07ccc37aae6f4eb2ca37cc8c73bce8ed0505ad18fab5a734769ae350",
+    "config_hash": "e0f7d44ae6b96e3aba81f74703e1d99691a71c02c2a6b5b55880e9e886f229c3",
+    "feature_hash": "3b8fe98062ffabcfa1454deb2f74d01621d5817dd2e0a8aaa4f4a976969af201",
+    "implementation_version": "bayesian-prototype-1",
+    "implementation_hash": "fdf933fbb12fbb118a59c8cb87a9cceae59599b366d0125c7a3d56cb93fdcc28",
+    "model_hashes": {
+      "less_sensitive": "92afb93f3bd8298c63e0a2b19d0d50a1b46dcf0994da26bb09ed3fbf4d54b7db",
+      "baseline": "2e33cebd3a1c63028fde49ac3a4f7b42529d677ce4045329d617fecb82cde310",
+      "more_sensitive": "8dd5c87234d4961406aa95118d99c33e114fb6ba2a70c02e8dc0af1d8f13abe8"
+    },
+    "policy_hash": "c07d8ea364e0d5d0731cbc5c4fc69bf429ec4f98375e0e0b9da557b12f5e2eeb",
+    "rules": {
+      "version": "explicit-demo-policy-1",
+      "request_hash": "cec836364852beec965f1efffe775b448b9133a1cc6e17ba969bbddf77d66496",
+      "checks": [
+        {
+          "id": "mandatory_policy",
+          "result": "pass"
+        },
+        {
+          "id": "authority_active",
+          "result": "pass"
+        },
+        {
+          "id": "authority_valid_at_resolution",
+          "result": "pass"
+        }
+      ]
+    },
+    "decision": "approve",
+    "reason": "PROTOTYPE_MODEL_POLICY",
+    "snapshot": {
+      "features": {
+        "merchant": {
+          "value": 0,
+          "state": "observed",
+          "sample_size": 6,
+          "coverage_days": 31.5,
+          "reason": null,
+          "support_ids": [
+            "DEMO0",
+            "DEMO1",
+            "DEMO2",
+            "DEMO3",
+            "DEMO4",
+            "DEMO5"
+          ]
+        },
+        "amount": {
+          "value": 0,
+          "state": "observed",
+          "sample_size": 6,
+          "coverage_days": 31.5,
+          "reason": null,
+          "support_ids": [
+            "DEMO0",
+            "DEMO1",
+            "DEMO2",
+            "DEMO3",
+            "DEMO4",
+            "DEMO5"
+          ]
+        },
+        "country": {
+          "value": 0,
+          "state": "observed",
+          "sample_size": 6,
+          "coverage_days": 31.5,
+          "reason": null,
+          "support_ids": [
+            "DEMO0",
+            "DEMO1",
+            "DEMO2",
+            "DEMO3",
+            "DEMO4",
+            "DEMO5"
+          ]
+        },
+        "velocity": {
+          "value": 0,
+          "state": "observed",
+          "sample_size": 6,
+          "coverage_days": 31.5,
+          "reason": null,
+          "support_ids": [
+            "DEMO0",
+            "DEMO1",
+            "DEMO2",
+            "DEMO3",
+            "DEMO4",
+            "DEMO5"
+          ]
+        },
+        "device": {
+          "value": 0,
+          "state": "observed",
+          "sample_size": 6,
+          "coverage_days": 31.5,
+          "reason": null,
+          "support_ids": [
+            "DEMO0",
+            "DEMO1",
+            "DEMO2",
+            "DEMO3",
+            "DEMO4",
+            "DEMO5"
+          ]
+        }
+      },
+      "provenance": [
+        {
+          "id": "DEMO0",
+          "version": 1,
+          "hash": "22400c2dc8d1272eb0efdd767926225f5455134c93af8fba86d649f66e6474ed",
+          "event_time": "2026-01-01T12:00:00Z",
+          "known_at": "2026-01-01T12:00:00Z",
+          "known_at_basis": "assumed_event_time",
+          "graph_path": [
+            "CA",
+            "DEMO0",
+            "ME"
+          ]
+        },
+        {
+          "id": "DEMO1",
+          "version": 1,
+          "hash": "11e7dd3c6d8e062a6c3ff349d22106dc79d8b648f089b99bccf92e0b6ff0a5aa",
+          "event_time": "2026-01-02T12:00:00Z",
+          "known_at": "2026-01-02T12:00:00Z",
+          "known_at_basis": "assumed_event_time",
+          "graph_path": [
+            "CA",
+            "DEMO1",
+            "ME"
+          ]
+        },
+        {
+          "id": "DEMO2",
+          "version": 1,
+          "hash": "fe46c17671fbb0e670dcafe961eef7ad30ce8a52244862e46a7bee59687bfee4",
+          "event_time": "2026-01-03T12:00:00Z",
+          "known_at": "2026-01-03T12:00:00Z",
+          "known_at_basis": "assumed_event_time",
+          "graph_path": [
+            "CA",
+            "DEMO2",
+            "ME"
+          ]
+        },
+        {
+          "id": "DEMO3",
+          "version": 1,
+          "hash": "3bc1592d05fb70b212569317b68c4d2756bc740085c62005979976039b96ee53",
+          "event_time": "2026-01-04T12:00:00Z",
+          "known_at": "2026-01-04T12:00:00Z",
+          "known_at_basis": "assumed_event_time",
+          "graph_path": [
+            "CA",
+            "DEMO3",
+            "ME"
+          ]
+        },
+        {
+          "id": "DEMO4",
+          "version": 1,
+          "hash": "fecbc88552e0c5200b2e1dd1014d92ced413cbd9861d3ba4cc3fbcc43bae3c33",
+          "event_time": "2026-01-05T12:00:00Z",
+          "known_at": "2026-01-05T12:00:00Z",
+          "known_at_basis": "assumed_event_time",
+          "graph_path": [
+            "CA",
+            "DEMO4",
+            "ME"
+          ]
+        },
+        {
+          "id": "DEMO5",
+          "version": 1,
+          "hash": "4ac54bd0c7e658a5c69e11c372479c1ed335466fe5f7d7cbd72f890d84749298",
+          "event_time": "2026-01-06T12:00:00Z",
+          "known_at": "2026-01-06T12:00:00Z",
+          "known_at_basis": "assumed_event_time",
+          "graph_path": [
+            "CA",
+            "DEMO5",
+            "ME"
+          ]
+        }
+      ],
+      "coverage": {
+        "available": true,
+        "tenant": "demo",
+        "run": "acceptance",
+        "card_id": "CA",
+        "customer_id": "CU",
+        "start": "2026-01-01T00:00:00Z",
+        "through": "2026-02-01T12:00:00+00:00",
+        "known_at": "2026-02-01T12:00:00+00:00",
+        "known_at_basis": "assumed_event_time"
+      },
+      "transaction_time": "2026-02-01T12:00:00+00:00",
+      "decision_time": "2026-02-01T12:00:00+00:00",
+      "scope": {
+        "tenant": "demo",
+        "run": "acceptance",
+        "card_id": "CA",
+        "customer_id": "CU"
+      },
+      "feature_spec": {
+        "version": "features-1",
+        "min_approved_purchases": 5,
+        "window_days": 90,
+        "min_coverage_days": 7,
+        "velocity_minutes": 10,
+        "velocity_count": 3,
+        "amount_p95_multiplier": 1.5,
+        "required": [
+          "merchant",
+          "amount",
+          "country",
+          "velocity"
+        ],
+        "optional": [
+          "device"
+        ],
+        "freshness_seconds": 0
+      },
+      "feature_hash": "3b8fe98062ffabcfa1454deb2f74d01621d5817dd2e0a8aaa4f4a976969af201",
+      "mode": "synthetic_retrospective",
+      "summary": {
+        "status": "known",
+        "approved_count": 6,
+        "declined_count": 0,
+        "approved_purchase_cents": 6000,
+        "net_approved_cents": 6000,
+        "amount_p50_cents": 1000,
+        "amount_p95_cents": 1000,
+        "first_approved_at": "2026-01-01T12:00:00Z",
+        "last_approved_at": "2026-01-06T12:00:00Z",
+        "supporting_event_ids": [
+          "DEMO0",
+          "DEMO1",
+          "DEMO2",
+          "DEMO3",
+          "DEMO4",
+          "DEMO5"
+        ],
+        "as_of": "2026-02-01T12:00:00+00:00",
+        "calculation_version": "evidence-v1"
+      },
+      "snapshot_id": "44e9e0afbed361fc4106988b70ea0cc6694cb5dd8c0cbab6850fcec6bb645783"
+    },
+    "analysis": {
+      "baseline": 0.030750000000000003,
+      "minimum": 0.023680000000000003,
+      "maximum": 0.03828,
+      "scenarios": {
+        "less_sensitive": 0.023680000000000003,
+        "baseline": 0.030750000000000003,
+        "more_sensitive": 0.03828
+      },
+      "influence": [
+        {
+          "feature": "amount",
+          "posterior": 0.030750000000000003,
+          "without_feature": 0.04599,
+          "delta": -0.01524,
+          "comparison": "marginalize omitted evidence",
+          "interpretation": "lowers estimate"
+        },
+        {
+          "feature": "country",
+          "posterior": 0.030750000000000003,
+          "without_feature": 0.031973404255319145,
+          "delta": -0.0012234042553191417,
+          "comparison": "marginalize omitted evidence",
+          "interpretation": "lowers estimate"
+        },
+        {
+          "feature": "device",
+          "posterior": 0.030750000000000003,
+          "without_feature": 0.035350000000000006,
+          "delta": -0.004600000000000003,
+          "comparison": "marginalize omitted evidence",
+          "interpretation": "lowers estimate"
+        },
+        {
+          "feature": "merchant",
+          "posterior": 0.030750000000000003,
+          "without_feature": 0.05381582840236686,
+          "delta": -0.023065828402366855,
+          "comparison": "marginalize omitted evidence",
+          "interpretation": "lowers estimate"
+        },
+        {
+          "feature": "velocity",
+          "posterior": 0.030750000000000003,
+          "without_feature": 0.033694,
+          "delta": -0.0029439999999999987,
+          "comparison": "marginalize omitted evidence",
+          "interpretation": "lowers estimate"
+        }
+      ],
+      "range_kind": "expert parameter sensitivity; not a confidence interval",
+      "recommendation_changes": false
+    },
+    "persisted": true,
+    "receipt_hash": "adb3d8a5a55600638a44191bf775e8fb11745c29ba58a30e2924b9e8ab292f5e"
+  },
+  "unusual": {
+    "version": "bayesian-prototype-1",
+    "scope": "805a383fe09353eee2223b0463fea0487af54cfbe320c96de4f283f32785e485",
+    "request": {
+      "tenant": "demo",
+      "run": "acceptance",
+      "transaction_id": "DEMO",
+      "idempotency_key": "unusual",
+      "customer_id": "CU",
+      "card_id": "CA",
+      "merchant_id": "ME",
+      "country": "CH",
+      "channel": "ecommerce",
+      "device_id": "D",
+      "amount_cents": 100000,
+      "transaction_time": "2026-02-01T12:00:00+00:00",
+      "decision_time": "2026-02-01T12:00:00+00:00",
+      "mode": "synthetic_retrospective",
+      "authority_id": "AUTH",
+      "transaction_type": "purchase"
+    },
+    "input_hash": "df202bf00dd0acdf0e43e708150c295db05d6e123d2d2b23f1d9a97c184c2cc7",
+    "config_hash": "e0f7d44ae6b96e3aba81f74703e1d99691a71c02c2a6b5b55880e9e886f229c3",
+    "feature_hash": "3b8fe98062ffabcfa1454deb2f74d01621d5817dd2e0a8aaa4f4a976969af201",
+    "implementation_version": "bayesian-prototype-1",
+    "implementation_hash": "fdf933fbb12fbb118a59c8cb87a9cceae59599b366d0125c7a3d56cb93fdcc28",
+    "model_hashes": {
+      "less_sensitive": "92afb93f3bd8298c63e0a2b19d0d50a1b46dcf0994da26bb09ed3fbf4d54b7db",
+      "baseline": "2e33cebd3a1c63028fde49ac3a4f7b42529d677ce4045329d617fecb82cde310",
+      "more_sensitive": "8dd5c87234d4961406aa95118d99c33e114fb6ba2a70c02e8dc0af1d8f13abe8"
+    },
+    "policy_hash": "c07d8ea364e0d5d0731cbc5c4fc69bf429ec4f98375e0e0b9da557b12f5e2eeb",
+    "rules": {
+      "version": "explicit-demo-policy-1",
+      "request_hash": "93a9c5beb6014a8ea118003320b368ae2c4df17eafb1614ef778a79fe28bb8a6",
+      "checks": [
+        {
+          "id": "mandatory_policy",
+          "result": "pass"
+        },
+        {
+          "id": "authority_active",
+          "result": "pass"
+        },
+        {
+          "id": "authority_valid_at_resolution",
+          "result": "pass"
+        }
+      ]
+    },
+    "decision": "step_up",
+    "reason": "PROTOTYPE_MODEL_POLICY",
+    "snapshot": {
+      "features": {
+        "merchant": {
+          "value": 0,
+          "state": "observed",
+          "sample_size": 6,
+          "coverage_days": 31.5,
+          "reason": null,
+          "support_ids": [
+            "DEMO0",
+            "DEMO1",
+            "DEMO2",
+            "DEMO3",
+            "DEMO4",
+            "DEMO5"
+          ]
+        },
+        "amount": {
+          "value": 1,
+          "state": "observed",
+          "sample_size": 6,
+          "coverage_days": 31.5,
+          "reason": null,
+          "support_ids": [
+            "DEMO0",
+            "DEMO1",
+            "DEMO2",
+            "DEMO3",
+            "DEMO4",
+            "DEMO5"
+          ]
+        },
+        "country": {
+          "value": 0,
+          "state": "observed",
+          "sample_size": 6,
+          "coverage_days": 31.5,
+          "reason": null,
+          "support_ids": [
+            "DEMO0",
+            "DEMO1",
+            "DEMO2",
+            "DEMO3",
+            "DEMO4",
+            "DEMO5"
+          ]
+        },
+        "velocity": {
+          "value": 0,
+          "state": "observed",
+          "sample_size": 6,
+          "coverage_days": 31.5,
+          "reason": null,
+          "support_ids": [
+            "DEMO0",
+            "DEMO1",
+            "DEMO2",
+            "DEMO3",
+            "DEMO4",
+            "DEMO5"
+          ]
+        },
+        "device": {
+          "value": 0,
+          "state": "observed",
+          "sample_size": 6,
+          "coverage_days": 31.5,
+          "reason": null,
+          "support_ids": [
+            "DEMO0",
+            "DEMO1",
+            "DEMO2",
+            "DEMO3",
+            "DEMO4",
+            "DEMO5"
+          ]
+        }
+      },
+      "provenance": [
+        {
+          "id": "DEMO0",
+          "version": 1,
+          "hash": "22400c2dc8d1272eb0efdd767926225f5455134c93af8fba86d649f66e6474ed",
+          "event_time": "2026-01-01T12:00:00Z",
+          "known_at": "2026-01-01T12:00:00Z",
+          "known_at_basis": "assumed_event_time",
+          "graph_path": [
+            "CA",
+            "DEMO0",
+            "ME"
+          ]
+        },
+        {
+          "id": "DEMO1",
+          "version": 1,
+          "hash": "11e7dd3c6d8e062a6c3ff349d22106dc79d8b648f089b99bccf92e0b6ff0a5aa",
+          "event_time": "2026-01-02T12:00:00Z",
+          "known_at": "2026-01-02T12:00:00Z",
+          "known_at_basis": "assumed_event_time",
+          "graph_path": [
+            "CA",
+            "DEMO1",
+            "ME"
+          ]
+        },
+        {
+          "id": "DEMO2",
+          "version": 1,
+          "hash": "fe46c17671fbb0e670dcafe961eef7ad30ce8a52244862e46a7bee59687bfee4",
+          "event_time": "2026-01-03T12:00:00Z",
+          "known_at": "2026-01-03T12:00:00Z",
+          "known_at_basis": "assumed_event_time",
+          "graph_path": [
+            "CA",
+            "DEMO2",
+            "ME"
+          ]
+        },
+        {
+          "id": "DEMO3",
+          "version": 1,
+          "hash": "3bc1592d05fb70b212569317b68c4d2756bc740085c62005979976039b96ee53",
+          "event_time": "2026-01-04T12:00:00Z",
+          "known_at": "2026-01-04T12:00:00Z",
+          "known_at_basis": "assumed_event_time",
+          "graph_path": [
+            "CA",
+            "DEMO3",
+            "ME"
+          ]
+        },
+        {
+          "id": "DEMO4",
+          "version": 1,
+          "hash": "fecbc88552e0c5200b2e1dd1014d92ced413cbd9861d3ba4cc3fbcc43bae3c33",
+          "event_time": "2026-01-05T12:00:00Z",
+          "known_at": "2026-01-05T12:00:00Z",
+          "known_at_basis": "assumed_event_time",
+          "graph_path": [
+            "CA",
+            "DEMO4",
+            "ME"
+          ]
+        },
+        {
+          "id": "DEMO5",
+          "version": 1,
+          "hash": "4ac54bd0c7e658a5c69e11c372479c1ed335466fe5f7d7cbd72f890d84749298",
+          "event_time": "2026-01-06T12:00:00Z",
+          "known_at": "2026-01-06T12:00:00Z",
+          "known_at_basis": "assumed_event_time",
+          "graph_path": [
+            "CA",
+            "DEMO5",
+            "ME"
+          ]
+        }
+      ],
+      "coverage": {
+        "available": true,
+        "tenant": "demo",
+        "run": "acceptance",
+        "card_id": "CA",
+        "customer_id": "CU",
+        "start": "2026-01-01T00:00:00Z",
+        "through": "2026-02-01T12:00:00+00:00",
+        "known_at": "2026-02-01T12:00:00+00:00",
+        "known_at_basis": "assumed_event_time"
+      },
+      "transaction_time": "2026-02-01T12:00:00+00:00",
+      "decision_time": "2026-02-01T12:00:00+00:00",
+      "scope": {
+        "tenant": "demo",
+        "run": "acceptance",
+        "card_id": "CA",
+        "customer_id": "CU"
+      },
+      "feature_spec": {
+        "version": "features-1",
+        "min_approved_purchases": 5,
+        "window_days": 90,
+        "min_coverage_days": 7,
+        "velocity_minutes": 10,
+        "velocity_count": 3,
+        "amount_p95_multiplier": 1.5,
+        "required": [
+          "merchant",
+          "amount",
+          "country",
+          "velocity"
+        ],
+        "optional": [
+          "device"
+        ],
+        "freshness_seconds": 0
+      },
+      "feature_hash": "3b8fe98062ffabcfa1454deb2f74d01621d5817dd2e0a8aaa4f4a976969af201",
+      "mode": "synthetic_retrospective",
+      "summary": {
+        "status": "known",
+        "approved_count": 6,
+        "declined_count": 0,
+        "approved_purchase_cents": 6000,
+        "net_approved_cents": 6000,
+        "amount_p50_cents": 1000,
+        "amount_p95_cents": 1000,
+        "first_approved_at": "2026-01-01T12:00:00Z",
+        "last_approved_at": "2026-01-06T12:00:00Z",
+        "supporting_event_ids": [
+          "DEMO0",
+          "DEMO1",
+          "DEMO2",
+          "DEMO3",
+          "DEMO4",
+          "DEMO5"
+        ],
+        "as_of": "2026-02-01T12:00:00+00:00",
+        "calculation_version": "evidence-v1"
+      },
+      "snapshot_id": "e30afcec7762d31481b8b574fc170f4c52ada866c478a7ed1dd7ec6245475874"
+    },
+    "analysis": {
+      "baseline": 0.41175,
+      "minimum": 0.32832,
+      "maximum": 0.49572000000000005,
+      "scenarios": {
+        "less_sensitive": 0.32832,
+        "baseline": 0.41175,
+        "more_sensitive": 0.49572000000000005
+      },
+      "influence": [
+        {
+          "feature": "amount",
+          "posterior": 0.41175,
+          "without_feature": 0.04599,
+          "delta": 0.36576,
+          "comparison": "marginalize omitted evidence",
+          "interpretation": "raises estimate"
+        },
+        {
+          "feature": "country",
+          "posterior": 0.41175,
+          "without_feature": 0.413186170212766,
+          "delta": -0.0014361702127659859,
+          "comparison": "marginalize omitted evidence",
+          "interpretation": "lowers estimate"
+        },
+        {
+          "feature": "device",
+          "posterior": 0.41175,
+          "without_feature": 0.41715,
+          "delta": -0.005400000000000016,
+          "comparison": "marginalize omitted evidence",
+          "interpretation": "lowers estimate"
+        },
+        {
+          "feature": "merchant",
+          "posterior": 0.41175,
+          "without_feature": 0.4702119790920808,
+          "delta": -0.058461979092080785,
+          "comparison": "marginalize omitted evidence",
+          "interpretation": "lowers estimate"
+        },
+        {
+          "feature": "velocity",
+          "posterior": 0.41175,
+          "without_feature": 0.415206,
+          "delta": -0.0034560000000000146,
+          "comparison": "marginalize omitted evidence",
+          "interpretation": "lowers estimate"
+        }
+      ],
+      "range_kind": "expert parameter sensitivity; not a confidence interval",
+      "recommendation_changes": true
+    },
+    "persisted": true,
+    "receipt_hash": "0f637c6bcbc56bce540716512a3a8ccb79b8777f02b7c3f2bf795568b139068b"
+  },
+  "hard_violation": {
+    "version": "bayesian-prototype-1",
+    "scope": "fb26ac9e91852a09c55f9ed4dcc157688f99426eb88b9b5d876a4b1f3552e834",
+    "request": {
+      "tenant": "demo",
+      "run": "acceptance",
+      "transaction_id": "DEMO",
+      "idempotency_key": "hard_violation",
+      "customer_id": "CU",
+      "card_id": "CA",
+      "merchant_id": "ME",
+      "country": "CH",
+      "channel": "ecommerce",
+      "device_id": "D",
+      "amount_cents": 1000,
+      "transaction_time": "2026-02-01T12:00:00+00:00",
+      "decision_time": "2026-02-01T12:00:00+00:00",
+      "mode": "synthetic_retrospective",
+      "authority_id": "AUTH",
+      "transaction_type": "purchase"
+    },
+    "input_hash": "ea081eab2256052b476dd3f0c593301de52c46cd81b89f5dbc1d981540a1e294",
+    "config_hash": "e0f7d44ae6b96e3aba81f74703e1d99691a71c02c2a6b5b55880e9e886f229c3",
+    "feature_hash": "3b8fe98062ffabcfa1454deb2f74d01621d5817dd2e0a8aaa4f4a976969af201",
+    "implementation_version": "bayesian-prototype-1",
+    "implementation_hash": "fdf933fbb12fbb118a59c8cb87a9cceae59599b366d0125c7a3d56cb93fdcc28",
+    "model_hashes": {
+      "less_sensitive": "92afb93f3bd8298c63e0a2b19d0d50a1b46dcf0994da26bb09ed3fbf4d54b7db",
+      "baseline": "2e33cebd3a1c63028fde49ac3a4f7b42529d677ce4045329d617fecb82cde310",
+      "more_sensitive": "8dd5c87234d4961406aa95118d99c33e114fb6ba2a70c02e8dc0af1d8f13abe8"
+    },
+    "policy_hash": "c07d8ea364e0d5d0731cbc5c4fc69bf429ec4f98375e0e0b9da557b12f5e2eeb",
+    "rules": {
+      "version": "explicit-demo-policy-1",
+      "request_hash": "213b88c4e7139a936d9b6b6b33920654689aad9aebd43385f83c9dcd7cad7432",
+      "checks": [
+        {
+          "id": "mandatory_policy",
+          "result": "fail"
+        },
+        {
+          "id": "authority_active",
+          "result": "pass"
+        },
+        {
+          "id": "authority_valid_at_resolution",
+          "result": "pass"
+        }
+      ]
+    },
+    "decision": "decline",
+    "reason": "HARD_RULE_VIOLATION",
+    "snapshot": null,
+    "analysis": null,
+    "persisted": true,
+    "rule_failures": [
+      "mandatory_policy"
+    ],
+    "receipt_hash": "3ef1fbf6647817df50776947fc88ed9b357b2c004c3dc3347dee21b7be98d336"
+  },
+  "missing_evidence": {
+    "version": "bayesian-prototype-1",
+    "scope": "2ebc9685356c7438ec39ad90208430de646dc33869cee21e1f7f55b41eb7255b",
+    "request": {
+      "tenant": "demo",
+      "run": "acceptance",
+      "transaction_id": "DEMO",
+      "idempotency_key": "missing_evidence",
+      "customer_id": "CU",
+      "card_id": "CA",
+      "merchant_id": "ME",
+      "country": "CH",
+      "channel": "ecommerce",
+      "device_id": "D",
+      "amount_cents": 1000,
+      "transaction_time": "2026-02-01T12:00:00+00:00",
+      "decision_time": "2026-02-01T12:00:00+00:00",
+      "mode": "synthetic_retrospective",
+      "authority_id": "AUTH",
+      "transaction_type": "purchase"
+    },
+    "input_hash": "c8f7ac51eb1f8a0a8e9ee7f6f6b198269565143033802c8990edb04e6c21151b",
+    "config_hash": "e0f7d44ae6b96e3aba81f74703e1d99691a71c02c2a6b5b55880e9e886f229c3",
+    "feature_hash": "3b8fe98062ffabcfa1454deb2f74d01621d5817dd2e0a8aaa4f4a976969af201",
+    "implementation_version": "bayesian-prototype-1",
+    "implementation_hash": "fdf933fbb12fbb118a59c8cb87a9cceae59599b366d0125c7a3d56cb93fdcc28",
+    "model_hashes": {
+      "less_sensitive": "92afb93f3bd8298c63e0a2b19d0d50a1b46dcf0994da26bb09ed3fbf4d54b7db",
+      "baseline": "2e33cebd3a1c63028fde49ac3a4f7b42529d677ce4045329d617fecb82cde310",
+      "more_sensitive": "8dd5c87234d4961406aa95118d99c33e114fb6ba2a70c02e8dc0af1d8f13abe8"
+    },
+    "policy_hash": "c07d8ea364e0d5d0731cbc5c4fc69bf429ec4f98375e0e0b9da557b12f5e2eeb",
+    "rules": {
+      "version": "explicit-demo-policy-1",
+      "request_hash": "c06724ff4a3eb48fb9998686043a4bebeb5e1640b0ef554e79514582e8376907",
+      "checks": [
+        {
+          "id": "mandatory_policy",
+          "result": "pass"
+        },
+        {
+          "id": "authority_active",
+          "result": "pass"
+        },
+        {
+          "id": "authority_valid_at_resolution",
+          "result": "pass"
+        }
+      ]
+    },
+    "decision": "step_up",
+    "reason": "MISSING_REQUIRED_EVIDENCE",
+    "snapshot": {
+      "features": {
+        "merchant": {
+          "value": null,
+          "state": "history_unavailable",
+          "sample_size": 0,
+          "coverage_days": 0,
+          "reason": "history_unavailable",
+          "support_ids": []
+        },
+        "amount": {
+          "value": null,
+          "state": "history_unavailable",
+          "sample_size": 0,
+          "coverage_days": 0,
+          "reason": "history_unavailable",
+          "support_ids": []
+        },
+        "country": {
+          "value": null,
+          "state": "history_unavailable",
+          "sample_size": 0,
+          "coverage_days": 0,
+          "reason": "history_unavailable",
+          "support_ids": []
+        },
+        "velocity": {
+          "value": null,
+          "state": "history_unavailable",
+          "sample_size": 0,
+          "coverage_days": 0,
+          "reason": "history_unavailable",
+          "support_ids": []
+        },
+        "device": {
+          "value": null,
+          "state": "history_unavailable",
+          "sample_size": 0,
+          "coverage_days": 0,
+          "reason": "history_unavailable",
+          "support_ids": []
+        }
+      },
+      "provenance": [],
+      "coverage": {
+        "available": false,
+        "tenant": "demo",
+        "run": "acceptance",
+        "card_id": "CA",
+        "customer_id": "CU",
+        "start": "2026-01-01T00:00:00Z",
+        "through": "2026-02-01T12:00:00+00:00",
+        "known_at": "2026-02-01T12:00:00+00:00",
+        "known_at_basis": "assumed_event_time"
+      },
+      "transaction_time": "2026-02-01T12:00:00+00:00",
+      "decision_time": "2026-02-01T12:00:00+00:00",
+      "scope": {
+        "tenant": "demo",
+        "run": "acceptance",
+        "card_id": "CA",
+        "customer_id": "CU"
+      },
+      "feature_spec": {
+        "version": "features-1",
+        "min_approved_purchases": 5,
+        "window_days": 90,
+        "min_coverage_days": 7,
+        "velocity_minutes": 10,
+        "velocity_count": 3,
+        "amount_p95_multiplier": 1.5,
+        "required": [
+          "merchant",
+          "amount",
+          "country",
+          "velocity"
+        ],
+        "optional": [
+          "device"
+        ],
+        "freshness_seconds": 0
+      },
+      "feature_hash": "3b8fe98062ffabcfa1454deb2f74d01621d5817dd2e0a8aaa4f4a976969af201",
+      "mode": "synthetic_retrospective",
+      "summary": {
+        "status": "no_prior_relationship",
+        "approved_count": 0,
+        "declined_count": 0,
+        "approved_purchase_cents": 0,
+        "net_approved_cents": 0,
+        "amount_p50_cents": null,
+        "amount_p95_cents": null,
+        "first_approved_at": null,
+        "last_approved_at": null,
+        "supporting_event_ids": [],
+        "as_of": "2026-02-01T12:00:00+00:00",
+        "calculation_version": "evidence-v1"
+      },
+      "snapshot_id": "eed1fd9ead4834ca0f0a79cc1e7edf34cb50954134a1582f3b0ed4830cd36e4a"
+    },
+    "analysis": null,
+    "persisted": true,
+    "missing_features": [
+      "merchant",
+      "amount",
+      "country",
+      "velocity"
+    ],
+    "receipt_hash": "dd594e3b595b06b94ab16f1acf845c5d5f91e12b05138a83f15e04e5503556f2"
+  },
+  "human_approve": {
+    "event": {
+      "customer_id": "CU",
+      "event_key": "approve",
+      "receipt_scope": "a7a31ab1bf0d23b7eb7d7d3f072578d75edd20076932110f508a6ddf5fc3815f",
+      "request_hash": "49112b6c0356a5a08c7a5afa1eef1b9afae50a22c335f186a829f2d36b3bab37",
+      "action": "approve",
+      "resolved_at": "2026-02-01T12:01:00Z"
+    },
+    "status": "approved",
+    "rechecked_rules": {
+      "version": "explicit-demo-policy-1",
+      "request_hash": "aed65c2d852ce9e2bddc7bd16a38f443a576d599a9a1cbf86edf1fcaef4ea89e",
+      "checks": [
+        {
+          "id": "mandatory_policy",
+          "result": "pass"
+        },
+        {
+          "id": "authority_active",
+          "result": "pass"
+        },
+        {
+          "id": "authority_valid_at_resolution",
+          "result": "pass"
+        }
+      ]
+    },
+    "authentication": "HMAC-SHA256 local demo principal",
+    "original_receipt_hash": "2bcea56130f8c0a945c2549d4a2be182f0b3f62b4ccf024d9d5cc684d9a54ff4",
+    "signature": "2f7620db5aee25fc9ddad564cc0887b6d08570396eadce57bb6bb9fd6c4515fe",
+    "resolution_hash": "52ad328135524ceb19b72e77992e6781553451b09d1c84eb41e899833d2e8313"
+  },
+  "human_reject": {
+    "event": {
+      "customer_id": "CU",
+      "event_key": "reject",
+      "receipt_scope": "9b100f4622bcd3a8c5f420b777735c0c73754b01edae890b0e7ce6a23ad57246",
+      "request_hash": "ea356e9540c74a3ab41df999065667abc9692a120196087f029951336b07d4e9",
+      "action": "reject",
+      "resolved_at": "2026-02-01T12:01:00Z"
+    },
+    "status": "customer_rejected",
+    "rechecked_rules": null,
+    "authentication": "HMAC-SHA256 local demo principal",
+    "original_receipt_hash": "27b0b0e74c32a9fdefadfb46f8f00882f3e90c5d8f42f269614e794a0f0d1800",
+    "signature": "be641c2eab773bf1d7c88233e88c979592f7f1e8d07c43f81979fb0800cbaee4",
+    "resolution_hash": "03e71b215e3c7ddbd94c594001701d589591870ab25e9aadbfbad94e089349a6"
+  },
+  "human_revoke": {
+    "event": {
+      "customer_id": "CU",
+      "event_key": "revoke",
+      "receipt_scope": "ed47cd5e538a78af6ac8e9f8a5181d446ddee22688cee7ff1d1149c6cec8034b",
+      "request_hash": "504e943a8c456240f1c26a578817713ebe79a9c97022c04ada060b57d0ba5fcb",
+      "action": "revoke",
+      "resolved_at": "2026-02-01T12:01:00Z"
+    },
+    "status": "authority_revoked",
+    "rechecked_rules": null,
+    "authentication": "HMAC-SHA256 local demo principal",
+    "original_receipt_hash": "22675b33defeeb259c5cb1b89c07384d1a6bb63e6ee5eb2605d241a71456cf0a",
+    "signature": "729f46f2e23d0a98dfc3793db2129c81e82f7f32318bf0ca88a7a22029dacb39",
+    "resolution_hash": "556fcfb455a6842d809f666adaf613163500a0e53b89bf2dc70c850f8866a270"
+  },
+  "after_revocation": {
+    "version": "bayesian-prototype-1",
+    "scope": "f6fbf4b10dbe37f626fa66f1b2066e7539af77091081cdcd8e29be6f87da0608",
+    "request": {
+      "tenant": "demo",
+      "run": "acceptance",
+      "transaction_id": "DEMO",
+      "idempotency_key": "after-revocation",
+      "customer_id": "CU",
+      "card_id": "CA",
+      "merchant_id": "ME",
+      "country": "CH",
+      "channel": "ecommerce",
+      "device_id": "D",
+      "amount_cents": 1000,
+      "transaction_time": "2026-02-01T12:00:00+00:00",
+      "decision_time": "2026-02-01T12:00:00+00:00",
+      "mode": "synthetic_retrospective",
+      "authority_id": "AUTH",
+      "transaction_type": "purchase"
+    },
+    "input_hash": "c6cf2b5113713186a03683a9477705387e902280fd64419d210d8088dadcbc1a",
+    "config_hash": "e0f7d44ae6b96e3aba81f74703e1d99691a71c02c2a6b5b55880e9e886f229c3",
+    "feature_hash": "3b8fe98062ffabcfa1454deb2f74d01621d5817dd2e0a8aaa4f4a976969af201",
+    "implementation_version": "bayesian-prototype-1",
+    "implementation_hash": "fdf933fbb12fbb118a59c8cb87a9cceae59599b366d0125c7a3d56cb93fdcc28",
+    "model_hashes": {
+      "less_sensitive": "92afb93f3bd8298c63e0a2b19d0d50a1b46dcf0994da26bb09ed3fbf4d54b7db",
+      "baseline": "2e33cebd3a1c63028fde49ac3a4f7b42529d677ce4045329d617fecb82cde310",
+      "more_sensitive": "8dd5c87234d4961406aa95118d99c33e114fb6ba2a70c02e8dc0af1d8f13abe8"
+    },
+    "policy_hash": "c07d8ea364e0d5d0731cbc5c4fc69bf429ec4f98375e0e0b9da557b12f5e2eeb",
+    "rules": {
+      "version": "explicit-demo-policy-1",
+      "request_hash": "8306d2e0cef9ab464acc49a7b5a45625fe4aa0b2be10ec25bb83dcdac9de4df6",
+      "checks": [
+        {
+          "id": "mandatory_policy",
+          "result": "pass"
+        },
+        {
+          "id": "authority_active",
+          "result": "pass"
+        },
+        {
+          "id": "authority_valid_at_resolution",
+          "result": "pass"
+        }
+      ]
+    },
+    "decision": "decline",
+    "reason": "AUTHORITY_REVOKED",
+    "snapshot": null,
+    "analysis": null,
+    "persisted": true,
+    "receipt_hash": "797b85befe164970db7a6a9f916986b4d72c1f8655f007e531ef64d6db57df5a"
+  }
+}
