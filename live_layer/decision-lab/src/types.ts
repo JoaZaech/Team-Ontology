@@ -40,12 +40,31 @@ export interface Authorization {
   customer_device_id: string;
   authority_status: string;
   card_status_at_attempt: string;
+  spend_in_period_before_chf?: number | null;
+  recent_attempt_count_10m?: number;
   fulfillment_method: string;
   delivery_by: string;
   order_returnable: string;
   order_cancellable: string;
+  related_authorization_id?: string | null;
+  related_authorization_status?: "pending" | "approved" | "declined" | "cancelled" | null;
   purchase_description: string;
   items: OrderItem[];
+}
+
+export interface RecentAuthorization {
+  authorization_id: string;
+  timestamp: string;
+  merchant_id: string;
+  billing_amount_chf: number;
+  status: "approved" | "declined" | "pending" | "cancelled";
+}
+
+export interface DecisionRuntime {
+  received_at?: string;
+  history_window_minutes?: number;
+  context_basis?: string;
+  [key: string]: unknown;
 }
 
 export interface Mandate {
@@ -65,8 +84,8 @@ export interface DecisionRequestData {
   deadline_at: string;
   authorization: Authorization;
   mandate: Mandate;
-  context: { approved_spend_in_period_chf: number; recent_authorizations: unknown[] };
-  runtime: Record<string, unknown>;
+  context: { approved_spend_in_period_chf: number | null; recent_authorizations: RecentAuthorization[] };
+  runtime: DecisionRuntime;
 }
 
 export interface DecisionEnvelope {

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
-import { evaluateRequest, pullRequest, resetDemo, setDemoScenario, submitDecision } from "../api";
-import type { DemoScenario } from "../fixtures";
+import { evaluateRequest, pullRequest, resetRequestRun, submitDecision } from "../api";
 import type { Check, Decision, DecisionEnvelope, EvaluationResult } from "../types";
 import visecaLogo from "../assets/viseca-logo.svg";
 import DecisionReceipt from "./DecisionReceipt.vue";
@@ -17,7 +16,6 @@ const recording = ref(false);
 const error = ref<string | null>(null);
 const declinedByCustomer = ref(false);
 const approvedByCustomer = ref(false);
-const selectedScenario = ref<DemoScenario>("approve");
 const decisionDialog = ref<HTMLElement | null>(null);
 const declineButton = ref<HTMLButtonElement | null>(null);
 let mounted = true;
@@ -46,7 +44,6 @@ async function recordDecision(decision: Decision): Promise<boolean> {
       authorizationId: evaluation.value.authorization_id,
       decision,
       reasonCodes: reasonCodes(evaluation.value.checks),
-      engineVersion: evaluation.value.engine_version,
     });
     if (mounted) {
       declinedByCustomer.value = decision === "decline" && reviewChecks.value.length > 0 && failedChecks.value.length === 0;
@@ -87,7 +84,7 @@ async function runWorkflow(): Promise<void> {
     evaluation.value = null;
     error.value = null;
     stage.value = "request";
-    await resetDemo();
+    await resetRequestRun();
     if (!isCurrentRun(sequence)) return;
     const request = await pullRequest();
     if (!request) throw new Error("request_unavailable");
@@ -117,15 +114,7 @@ async function runWorkflow(): Promise<void> {
   }
 }
 
-function selectScenario(scenario: DemoScenario): void {
-  if (recording.value) return;
-  selectedScenario.value = scenario;
-  setDemoScenario(scenario);
-  void runWorkflow();
-}
-
 onMounted(() => {
-  setDemoScenario(selectedScenario.value);
   void runWorkflow();
 });
 
@@ -155,11 +144,9 @@ onBeforeUnmount(() => {
       :stage="stage"
       :purchase="purchase"
       :evaluation="evaluation"
-      :selected-scenario="selectedScenario"
       :declined-by-customer="declinedByCustomer"
       :approved-by-customer="approvedByCustomer"
       @retry="runWorkflow"
-      @select-scenario="selectScenario"
     />
 
     <div

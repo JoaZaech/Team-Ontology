@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import visecaLogo from "../assets/viseca-logo.svg";
 import DynamicWalletPolicy from "./DynamicWalletPolicy.vue";
+import PolicyRecommendationCard, { type PolicyRecommendation as PolicyRecommendationDraft } from "./PolicyRecommendation.vue";
 import {
   createPreviewPolicy,
-  createPreviewPolicyRepository,
+  createLivePolicyRepository,
   type DynamicWalletPolicy as DynamicWalletPolicyDocument,
   type DynamicWalletPolicyPatch,
 } from "../policy-settings";
@@ -37,8 +38,21 @@ const initialDynamicPolicy = createPreviewPolicy();
 const dynamicPolicy = ref<DynamicWalletPolicyDocument>(initialDynamicPolicy);
 const policySaving = ref(false);
 const policyError = ref("");
-const policyRepository = createPreviewPolicyRepository(initialDynamicPolicy);
+const recommendationFeedback = ref("");
+const policyRepository = createLivePolicyRepository();
 const categories: Array<"All" | Policy["category"]> = ["All", "Spending", "Security", "Cards", "Notifications"];
+const policyRecommendation = ref<PolicyRecommendationDraft | null>({
+  id: "recurring-payment-review",
+  name: "Recurring payment review",
+  description: "Check a new recurring card payment or a renewal that changes from its usual amount.",
+  category: "Security",
+  rule: "Ask before a new recurring payment starts or an existing renewal is 20% higher than usual.",
+  signals: [
+    { value: "2", label: "recurring merchants" },
+    { value: "CHF 25.15", label: "typical monthly total" },
+    { value: "Approved", label: "wallet activity only" },
+  ],
+});
 
 const filteredPolicies = computed(() => {
   const query = search.value.trim().toLowerCase();
@@ -51,13 +65,51 @@ const filteredPolicies = computed(() => {
 const activeCount = computed(() => policies.value.filter((policy) => policy.enabled).length + Number(dynamicPolicy.value.enabled));
 
 function togglePolicy(policy: Policy): void {
+  recommendationFeedback.value = "";
   policy.enabled = !policy.enabled;
   policy.updated = "Updated just now";
   lastAction.value = `${policy.name} ${policy.enabled ? "enabled" : "disabled"}`;
 }
 
+function addRecommendedPolicy(recommendation: PolicyRecommendationDraft): void {
+  if (!policies.value.some((policy) => policy.name === recommendation.name)) {
+    policies.value.unshift({
+      id: Math.max(0, ...policies.value.map((policy) => policy.id)) + 1,
+      name: recommendation.name,
+      description: recommendation.description,
+      category: recommendation.category,
+      enabled: true,
+      updated: "Added just now",
+      icon: "shield",
+    });
+  }
+  policyRecommendation.value = null;
+  recommendationFeedback.value = `${recommendation.name} was added and enabled.`;
+}
+
+function dismissRecommendedPolicy(recommendationId: string): void {
+  if (policyRecommendation.value?.id !== recommendationId) return;
+  policyRecommendation.value = null;
+  recommendationFeedback.value = "Recommendation hidden. Your current policies have not changed.";
+}
+
+async function loadDynamicPolicy(): Promise<void> {
+  policySaving.value = true;
+  policyError.value = "";
+  try {
+    dynamicPolicy.value = await policyRepository.getDynamicWalletPolicy(initialDynamicPolicy.subject);
+  } catch (error) {
+    policyError.value = error instanceof Error
+      ? error.message
+      : "Unable to load the policy used by the decision service.";
+  } finally {
+    policySaving.value = false;
+  }
+}
+
 async function updateDynamicPolicy(patch: Partial<DynamicWalletPolicyPatch>): Promise<void> {
   if (policySaving.value) return;
+  recommendationFeedback.value = "";
   policySaving.value = true;
   policyError.value = "";
   try {
@@ -66,13 +118,17 @@ async function updateDynamicPolicy(patch: Partial<DynamicWalletPolicyPatch>): Pr
       expectedRevision: dynamicPolicy.value.revision,
       patch,
     });
-    lastAction.value = "Dynamic wallet policy updated in this preview";
+    lastAction.value = "Dynamic wallet policy updated. New purchase requests will use this revision.";
   } catch (error) {
     policyError.value = error instanceof Error ? error.message : "Unable to save the policy.";
   } finally {
     policySaving.value = false;
   }
 }
+
+onMounted(() => {
+  void loadDynamicPolicy();
+});
 
 function iconPath(icon: Policy["icon"]): string {
   return {
@@ -99,7 +155,7 @@ function iconPath(icon: Policy["icon"]): string {
       <section class="policy-workspace">
         <div class="policy-breadcrumb"><span>Settings</span><i>/</i> Wallet policies</div>
         <div class="policy-heading"><div><p class="policy-eyebrow">YOUR CARD, YOUR RULES</p><h1>Wallet policies</h1><p class="policy-intro">Choose the rules that help keep your card use simple and secure.</p></div><div class="policy-summary" aria-label="Number of active policies"><span>{{ activeCount }}</span><p>active<br />policies</p></div></div>
-        <section class="policy-notice" aria-label="Policy information"><div class="policy-notice__icon">i</div><p>This preview keeps a versioned policy document in memory. It is ready for a policy API, but does not yet change card decisions.</p></section>
+        <section class="policy-notice" aria-label="Policy information"><div class="policy-notice__icon">i</div><p>These settings are versioned by the local decision service and applied to the next incoming purchase request alongside the confirmed mandate.</p></section>
         <DynamicWalletPolicy :policy="dynamicPolicy" :saving="policySaving" @change="updateDynamicPolicy" />
         <p v-if="policyError" class="policy-error" role="alert">{{ policyError }}</p>
         <div class="policy-controls">
@@ -115,6 +171,8 @@ function iconPath(icon: Policy["icon"]): string {
           </article>
         </div>
         <div v-if="filteredPolicies.length === 0" class="policy-empty"><p>No policies match your filters.</p><button type="button" @click="search = ''; selectedCategory = 'All'; showOnlyActive = false">Clear filters</button></div>
+        <PolicyRecommendationCard v-if="policyRecommendation" :recommendation="policyRecommendation" @add="addRecommendedPolicy" @dismiss="dismissRecommendedPolicy" />
+        <p v-if="recommendationFeedback" class="policy-recommendation-feedback" role="status">{{ recommendationFeedback }}</p>
       </section>
     </div>
     <nav class="policy-mobile-nav" aria-label="Mobile navigation">

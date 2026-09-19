@@ -5,3 +5,5 @@ knowledge_graph/__pycache__/
 knowledge_graph/src/__pycache__/
 knowledge_graph/tests/__pycache__/
 knowledge_graph/.pytest_cache/
+live_layer/__pycache__/
+live_layer/*.sqlite3

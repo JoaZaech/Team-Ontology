@@ -6,6 +6,8 @@
  * engine, while the rule engine remains the only component that executes it.
  */
 
+import { getWalletPolicy, updateWalletPolicy } from "./api";
+
 export const REVIEW_TRIGGERS = ["new_merchant", "online_purchase", "unusual_activity"] as const;
 export const SPEND_CATEGORIES = ["Groceries", "Transport", "Dining", "Shopping"] as const;
 export const ASSISTANT_AUTHORITIES = ["review", "trusted", "autopilot"] as const;
@@ -77,7 +79,7 @@ export function createPreviewPolicy(): DynamicWalletPolicy {
     enabled: true,
     dailySpendingLimitChf: 1500,
     adaptiveSpendProfiles: defaultProfiles,
-    reviewTriggers: ["new_merchant", "online_purchase", "unusual_activity"],
+    reviewTriggers: ["new_merchant"],
     assistantAuthority: "trusted",
     effectiveFrom: "2026-09-19T00:00:00.000Z",
     updatedAt: "2026-09-19T10:42:00.000Z",
@@ -102,9 +104,8 @@ function validatePatch(patch: PolicyUpdateRequest["patch"]): void {
 }
 
 /**
- * Temporary adapter for the static demo. It mirrors the future API semantics
- * (read, versioned write, validation) but does not call a backend or execute
- * a payment rule. Replace this implementation with an HTTP PolicyRepository.
+ * In-memory implementation retained for isolated component development. The
+ * running decision lab uses ``createLivePolicyRepository`` below instead.
  */
 export function createPreviewPolicyRepository(initial = createPreviewPolicy()): PolicyRepository {
   let stored = clone(initial);
@@ -127,6 +128,33 @@ export function createPreviewPolicyRepository(initial = createPreviewPolicy()): 
         updatedBy: "customer",
       };
       return clone(stored);
+    },
+  };
+}
+
+/**
+ * Adapter for the local decision service. The service validates, versions, and
+ * supplies the exact snapshot used by the deterministic rulebook; the browser
+ * never evaluates a policy itself.
+ */
+export function createLivePolicyRepository(): PolicyRepository {
+  return {
+    async getDynamicWalletPolicy(subject) {
+      const policy = await getWalletPolicy();
+      if (policy.subject.customerId !== subject.customerId || policy.subject.cardId !== subject.cardId) {
+        throw new Error("Policy not found for the requested card.");
+      }
+      return policy;
+    },
+    async updateDynamicWalletPolicy(request) {
+      try {
+        return await updateWalletPolicy(request);
+      } catch (error) {
+        if (error instanceof Error && error.message === "policy revision conflict") {
+          throw new PolicyConflictError();
+        }
+        throw error;
+      }
     },
   };
 }

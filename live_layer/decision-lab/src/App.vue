@@ -96,7 +96,7 @@ onBeforeUnmount(() => {
             </div>
           </li>
         </ol>
-        <p class="assistant-research__note">Mock retrieval only — no external systems are contacted.</p>
+      <p class="assistant-research__note">Local rule service — only the synthetic Viseca data pack is evaluated.</p>
       </section>
     </section>
   </main>

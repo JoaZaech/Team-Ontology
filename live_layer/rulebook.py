@@ -7,6 +7,7 @@ from decimal import Decimal
 from typing import Any, Mapping
 
 from guardian import GuardPolicy, MerchantHistory, _money, evaluate_guard
+from wallet_policy import evaluate_wallet_policy
 
 
 @dataclass(frozen=True)
@@ -21,8 +22,14 @@ class ConfirmedRules:
 def evaluate_request(
     event: Mapping[str, Any], history: MerchantHistory,
     rules: ConfirmedRules = ConfirmedRules(),
+    wallet_policy: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Assess one live-event-shaped purchase without changing account state."""
+    """Assess one live-event-shaped purchase without changing account state.
+
+    ``wallet_policy`` is an optional server-owned customer-policy snapshot.
+    The static mandate checks above remain the hard baseline; dynamic policy
+    checks are additive and therefore can only tighten a decision.
+    """
 
     authorization = event["authorization"]
     mandate = event["mandate"]
@@ -107,6 +114,9 @@ def evaluate_request(
                        "reason_code": check["reason_code"],
                        "detail": detail})
 
+    if wallet_policy is not None:
+        checks.extend(evaluate_wallet_policy(event, history, wallet_policy))
+
     outcomes = {check["outcome"] for check in checks}
     decision = "decline" if "fail" in outcomes else "step_up" if "review" in outcomes else "approve"
     return {
@@ -115,5 +125,5 @@ def evaluate_request(
         "reason_codes": [check["reason_code"] for check in checks
                          if check["outcome"] != "pass"],
         "checks": checks,
-        "engine_version": "viseca-mock-rulebook-v1",
+        "engine_version": "viseca-mock-rulebook-v2" if wallet_policy is not None else "viseca-mock-rulebook-v1",
     }

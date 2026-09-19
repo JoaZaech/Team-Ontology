@@ -3,6 +3,7 @@ from copy import deepcopy
 
 from guardian import MerchantHistory
 from rulebook import evaluate_request
+from testing_support import check_names
 from viseca_mock import DATA_DIR, build_connection_event
 
 
@@ -15,7 +16,10 @@ class RulebookTests(unittest.TestCase):
         result = evaluate_request(build_connection_event(), self.history)
         self.assertEqual(result["recommended_decision"], "approve")
         self.assertTrue(all(check["outcome"] == "pass" for check in result["checks"]))
-        self.assertEqual(len(result["checks"]), 6)
+        self.assertEqual(check_names(result), {
+            "buyer authority", "requested basket", "order total",
+            "Spend limit", "Merchant familiarity", "Recent attempts",
+        })
 
     def test_wrong_item_is_declined(self):
         event = deepcopy(build_connection_event())

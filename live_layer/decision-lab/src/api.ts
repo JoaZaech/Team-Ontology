@@ -1,58 +1,94 @@
-import { AUTHORIZATION_ID, DEFAULT_DEMO_SCENARIO, FIXTURE_SCENARIOS } from "./fixtures";
-import type { DemoScenario } from "./fixtures";
 import type { Decision, DecisionEnvelope, DecisionRecordResult, EvaluationResult } from "./types";
+import type { DynamicWalletPolicy, PolicyUpdateRequest } from "./policy-settings";
 
-/**
- * Local, static stand-in for the Viseca mock API. No fetch(), no server —
- * this module just replays one fixture purchase from memory, mirroring the
- * request/response shapes and single-delivery semantics of
- * `live_layer/viseca_mock.py` so the UI and its logic stay unchanged.
- */
+const mockApiKey = import.meta.env.VITE_VISECA_MOCK_API_KEY ?? "mock-team-key";
 
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-let delivered = false;
-let recordedDecision: Decision | null = null;
-let demoScenario: DemoScenario = DEFAULT_DEMO_SCENARIO;
-
-export function setDemoScenario(scenario: DemoScenario): void {
-  demoScenario = scenario;
-}
-
-/** Pulls the queued mock purchase. Resolves to null when it was already delivered. */
-export async function pullRequest(): Promise<DecisionEnvelope | null> {
-  await sleep(250);
-  if (delivered) return null;
-  delivered = true;
-  return FIXTURE_SCENARIOS[demoScenario].envelope;
-}
-
-export async function evaluateRequest(): Promise<EvaluationResult> {
-  await sleep(600);
-  if (!delivered) throw new Error("request_not_delivered");
-  return FIXTURE_SCENARIOS[demoScenario].evaluation;
-}
+type ApiErrorBody = { error?: unknown };
 
 export interface SubmitDecisionInput {
   authorizationId: string;
   decision: Decision;
   reasonCodes: string[];
-  engineVersion: string;
+}
+
+function errorMessage(body: unknown, status: number): string {
+  const error = body && typeof body === "object" ? (body as ApiErrorBody).error : undefined;
+  if (typeof error === "string") {
+    return error;
+  }
+  return `Request failed with status ${status}.`;
+}
+
+async function fetchJson<T>(path: string, init: RequestInit = {}): Promise<T | null> {
+  let response: Response;
+  try {
+    response = await fetch(path, {
+      ...init,
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${mockApiKey}`,
+        ...init.headers,
+      },
+    });
+  } catch {
+    throw new Error("The decision service could not be reached.");
+  }
+
+  if (response.status === 204) return null;
+
+  let body: unknown = null;
+  try {
+    body = await response.json();
+  } catch {
+    if (response.ok) throw new Error("The decision service returned an invalid response.");
+  }
+
+  if (!response.ok) throw new Error(errorMessage(body, response.status));
+  return body as T;
+}
+
+export async function pullRequest(): Promise<DecisionEnvelope | null> {
+  return fetchJson<DecisionEnvelope>("/v1/decision-requests/next?wait=0");
+}
+
+export async function evaluateRequest(): Promise<EvaluationResult> {
+  const evaluation = await fetchJson<EvaluationResult>("/mock/evaluate", { method: "POST" });
+  if (!evaluation) throw new Error("No request is available to evaluate.");
+  return evaluation;
 }
 
 export async function submitDecision(input: SubmitDecisionInput): Promise<DecisionRecordResult> {
-  await sleep(250);
-  if (input.authorizationId !== AUTHORIZATION_ID) throw new Error("unknown_authorization");
-  if (!delivered) throw new Error("request_not_delivered");
-  if (recordedDecision !== null && recordedDecision !== input.decision) {
-    throw new Error("decision_conflict");
-  }
-  recordedDecision = input.decision;
-  return { authorization_id: input.authorizationId, status: "recorded", decision: input.decision };
+  const result = await fetchJson<DecisionRecordResult>(`/v1/authorizations/${encodeURIComponent(input.authorizationId)}/decision`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      authorization_id: input.authorizationId,
+      decision: input.decision,
+      reason_codes: input.reasonCodes,
+    }),
+  });
+  if (!result) throw new Error("The decision service did not confirm the recorded decision.");
+  return result;
 }
 
-export async function resetDemo(): Promise<void> {
-  await sleep(150);
-  delivered = false;
-  recordedDecision = null;
+export async function resetRequestRun(): Promise<void> {
+  await fetchJson("/mock/reset", { method: "POST" });
+}
+
+/** Read the server-owned policy snapshot used by the local rule engine. */
+export async function getWalletPolicy(): Promise<DynamicWalletPolicy> {
+  const policy = await fetchJson<DynamicWalletPolicy>("/mock/policy");
+  if (!policy) throw new Error("The policy service returned no policy.");
+  return policy;
+}
+
+/** Persist a versioned customer policy update before another request is evaluated. */
+export async function updateWalletPolicy(request: PolicyUpdateRequest): Promise<DynamicWalletPolicy> {
+  const policy = await fetchJson<DynamicWalletPolicy>("/mock/policy", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request),
+  });
+  if (!policy) throw new Error("The policy service did not confirm the update.");
+  return policy;
 }

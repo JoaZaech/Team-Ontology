@@ -6,6 +6,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from guardian import GuardPolicy, MerchantHistory, evaluate_guard
+from testing_support import check_named
 from viseca_mock import DIST_DIR, MOCK_AUTHORIZATION_ID, MockVisecaState, build_connection_event
 
 
@@ -37,7 +38,8 @@ class VisecaMockTests(unittest.TestCase):
             max_purchase_chf=Decimal("20.00"), require_familiar_merchant=True
         ))
         self.assertEqual(guard["decision"], "approve")
-        self.assertEqual(guard["checks"][1]["evidence"]["prior_approved_purchases"], 26)
+        self.assertEqual(
+            check_named(guard, "merchant_trust")["evidence"]["prior_approved_purchases"], 26)
 
     def test_one_delivery_then_decision(self):
         state = MockVisecaState()
@@ -57,9 +59,8 @@ class VisecaMockTests(unittest.TestCase):
         self.assertIsNotNone(state.next_request())
 
     def test_root_page_serves_the_built_decision_lab_app(self):
-        # decision-lab/ is a standalone static UI rehearsal: its SCEN0000 fixture
-        # is baked into the bundle at build time and it makes no calls back to
-        # this server, so this only checks the build exists and embeds that data.
+        # The built UI is served by this mock and calls its request, evaluation,
+        # and policy endpoints rather than embedding a copied decision result.
         index_path = DIST_DIR / "index.html"
         if not index_path.is_file():
             self.skipTest("Run 'npm run build' in live_layer/decision-lab first.")
@@ -68,9 +69,9 @@ class VisecaMockTests(unittest.TestCase):
         script_names = re.findall(r'src="(/assets/[^"]+\.js)"', index_html)
         self.assertTrue(script_names, "expected a built module script reference in dist/index.html")
         bundle = (DIST_DIR / script_names[0].lstrip("/")).read_text(encoding="utf-8")
-        self.assertIn("MOCK_AU0001", bundle)
-        self.assertIn("Alpine Basket", bundle)
-        self.assertIn("viseca-mock-rulebook-v1", bundle)
+        self.assertIn("/v1/decision-requests/next?wait=0", bundle)
+        self.assertIn("/mock/evaluate", bundle)
+        self.assertIn("/mock/policy", bundle)
 
 
 if __name__ == "__main__":

@@ -165,7 +165,7 @@ function togglePrompt(trigger: ReviewTrigger): void {
         </div>
       </section>
 
-      <footer class="dynamic-policy__footer"><span class="dynamic-policy__live"><i></i>{{ authoritySummary }}</span><span>Revision {{ policy.revision }} · {{ saving ? "Saving" : "Preview only" }}</span></footer>
+      <footer class="dynamic-policy__footer"><span class="dynamic-policy__live"><i></i>{{ authoritySummary }}</span><span>Revision {{ policy.revision }} · {{ saving ? "Saving" : "Used by the rule engine" }}</span></footer>
     </div>
     <div v-else class="dynamic-policy__disabled-copy"><span>Dynamic approval is off.</span> Turn it on to set user-first guardrails and assistant access.</div>
   </section>

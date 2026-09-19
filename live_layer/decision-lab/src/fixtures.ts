@@ -1,10 +1,9 @@
 import type { DecisionEnvelope, EvaluationResult } from "./types";
 
 /**
- * Static copy of the company's SCEN0000 / AU0001 connection-check fixture and
- * its rulebook evaluation. This app makes no network calls — the values below
- * mirror exactly what `live_layer/viseca_mock.py` + `rulebook.py` compute for
- * that one fixture, captured once so the demo can run as pure static files.
+ * Historical UI fixture retained for isolated component development. Runtime
+ * workflow data comes from `live_layer/viseca_mock.py`; these values are not a
+ * decision source in the shipped application.
  */
 export const AUTHORIZATION_ID = "MOCK_AU0001";
 

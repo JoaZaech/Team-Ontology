@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import type { DemoScenario } from "../fixtures";
 import type { Check, DecisionEnvelope, EvaluationResult } from "../types";
 
 type ReceiptStage = "request" | "analysis" | "combine" | "approved" | "declined" | "review" | "error";
@@ -19,14 +18,12 @@ const props = defineProps<{
   stage: ReceiptStage;
   purchase: DecisionEnvelope | null;
   evaluation: EvaluationResult | null;
-  selectedScenario: DemoScenario;
   declinedByCustomer: boolean;
   approvedByCustomer: boolean;
 }>();
 
 const emit = defineEmits<{
   retry: [];
-  selectScenario: [scenario: DemoScenario];
 }>();
 
 const activeTrace = ref<TraceId>("request");
@@ -225,12 +222,6 @@ const nextStep = computed(() => {
   };
 });
 
-const scenarios: Array<{ id: DemoScenario; label: string; hint: string }> = [
-  { id: "approve", label: "All checks pass", hint: "Automatic approval" },
-  { id: "decline", label: "Over the limit", hint: "Automatic decline" },
-  { id: "review", label: "New merchant", hint: "Your confirmation" },
-];
-
 watch(
   () => props.stage,
   (stage) => {
@@ -240,7 +231,19 @@ watch(
 );
 
 function isPolicyCheck(check: Check): boolean {
-  return ["buyer authority", "requested basket", "order total", "Spend limit"].includes(check.name);
+  return [
+    "buyer authority",
+    "requested basket",
+    "order total",
+    "Spend limit",
+    "Dynamic wallet policy",
+    "Daily spending limit",
+    "Category maximum",
+    "New merchant review",
+    "Online purchase review",
+    "Unusual activity review",
+    "Assistant approval access",
+  ].includes(check.name);
 }
 
 function readableCheckName(check: Check): string {
@@ -251,12 +254,21 @@ function readableCheckName(check: Check): string {
     "Spend limit": "This purchase is above the allowed limit",
     "Merchant familiarity": "This merchant needs your confirmation",
     "Recent attempts": "Recent purchase activity needs review",
+    "Daily spending limit": "This purchase exceeds the daily spending limit",
+    "Category maximum": "This purchase exceeds the category maximum",
+    "New merchant review": "This merchant needs your confirmation",
+    "Online purchase review": "This online purchase needs your confirmation",
+    "Unusual activity review": "This activity needs your confirmation",
+    "Assistant approval access": "Your approval access needs a review",
   };
   return names[check.name] ?? check.name;
 }
 
 function sourceFor(check: Check): string {
-  if (isPolicyCheck(check)) return "Saved wallet policy + purchase request";
+  if (["Daily spending limit", "Category maximum", "New merchant review", "Online purchase review", "Unusual activity review", "Assistant approval access", "Dynamic wallet policy"].includes(check.name)) {
+    return "Saved wallet policy + Viseca transaction history";
+  }
+  if (isPolicyCheck(check)) return "Confirmed mandate + purchase request";
   if (check.name === "Merchant familiarity") return "Merchant history";
   return "Recent purchase activity";
 }
@@ -419,14 +431,5 @@ function formatTime(value: string | undefined): string {
       </dl>
       <p v-if="mandate">{{ mandate.instruction }}</p>
     </details>
-
-    <section v-if="['approved', 'declined', 'review', 'error'].includes(stage)" class="decision-receipt__examples" aria-label="Try another simulated outcome">
-      <p>TRY ANOTHER SIMULATED OUTCOME</p>
-      <div>
-        <button v-for="scenario in scenarios" :key="scenario.id" type="button" :class="{ 'is-selected': selectedScenario === scenario.id }" @click="emit('selectScenario', scenario.id)">
-          <strong>{{ scenario.label }}</strong><small>{{ scenario.hint }}</small>
-        </button>
-      </div>
-    </section>
   </section>
 </template>

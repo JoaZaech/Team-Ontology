@@ -5,6 +5,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from guardian import GuardPolicy, MerchantHistory, evaluate_guard
+from testing_support import outcomes_by_name
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -33,8 +34,9 @@ class GuardianTests(unittest.TestCase):
         result = evaluate_guard(self.event(), self.history,
                                 GuardPolicy(max_purchase_chf=Decimal("20")))
         self.assertEqual(result["decision"], "approve")
-        self.assertEqual([c["outcome"] for c in result["checks"]],
-                         ["pass", "pass", "pass"])
+        self.assertEqual(outcomes_by_name(result),
+                         {"spend_cap": "pass", "merchant_trust": "pass",
+                          "rate_anomaly": "pass"})
 
     def test_hard_spend_cap_declines(self):
         result = evaluate_guard(self.event(), self.history,

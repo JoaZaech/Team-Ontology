@@ -26,6 +26,27 @@ Run the focused tests with:
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s live_layer -p 'test_*.py' -v
 ```
 
+## Decision receipts and telemetry
+
+Both local mocks now create a hash-chained decision receipt for each completed
+evaluation and record redacted operational events. Receipts capture the policy
+snapshot/hash, engine version, rule outcomes, deadline headroom, idempotency
+result, and a later customer resolution without mutating the original record.
+The telemetry view contains only bounded aggregates and HMAC-pseudonymous
+correlation values; it excludes raw customer, card, merchant, product, prompt,
+and API-key data.
+
+By default, receipts use an in-memory SQLite database for a local run. Set an
+explicit local path when demonstrating replay across a restart:
+
+```bash
+export DECISION_RECEIPTS_PATH=/tmp/viseca-decision-receipts.sqlite3
+```
+
+The local aggregate metric endpoints are `GET /v1/agent/observability` on port
+8081 and authenticated `GET /mock/observability` on port 8082. They are
+prototype inspection endpoints, not a production monitoring backend.
+
 ## Mock AI entry point
 
 Start the local server with `python3 -B live_layer/mock_api.py`, then send the
@@ -52,11 +73,12 @@ The server derives the merchant name/category, policy limit, prior card activity
 and ten-minute attempt count. The agent cannot set them. The mock policy
 `TM_DEMO_GROCERY` is bound to `CA0001` and has a CHF 20 purchase limit.
 
-The response contains a `guard.decision` and individual checks. It always sets
-`payment_authorized: false`: this prototype has no full item/return-policy
-engine, customer approval flow, payment, persistent ledger, or Viseca API
-connection. Its in-memory retry and rate state resets when restarted. Bind it
-only to local loopback as shown; it has no authentication.
+The response contains the guard result, the full rulebook evaluation, a policy
+snapshot, and a decision-receipt hash. It always sets `payment_authorized:
+false`: this prototype does not initiate a payment or connect a hosted worker.
+Its retry and rate state remains in memory; only receipts persist when
+`DECISION_RECEIPTS_PATH` is configured. Bind it only to local loopback as
+shown; it has no authentication.
 
 ## Hosted Viseca API connection
 
@@ -82,28 +104,32 @@ proposal. For a **Viseca-shaped API flow**, run `viseca_mock.py`. It reads the
 company's `SCEN0000` / `AU0001` fixture and builds the complete live event
 shape defined in `authorization_event.schema.json`, with a fresh mock deadline.
 
-The interactive demo page (`decision-lab/`) is a standalone Vue 3 + TypeScript
-app built with Vite. It is fully static: the SCEN0000 / AU0001 fixture and its
-rulebook evaluation are baked into `src/fixtures.ts` at build time, so the
-running page makes **no network calls at all** — it does not talk to
-`viseca_mock.py` or any server. Build and serve it with:
+The interactive demo page (`decision-lab/`) is a Vue 3 + TypeScript frontend
+for the local Viseca mock. It retrieves the incoming request, asks the local
+rule engine to evaluate it, records the selected decision, and reads or updates
+the versioned wallet policy. The server joins the request to the bundled
+transaction and merchant data; the browser does not make external calls.
+
+Build the frontend, then serve it through the mock API:
 
 ```bash
 cd live_layer/decision-lab
 npm install
 npm run build
-python3 -m http.server 8090 --directory dist --bind 127.0.0.1
+cd ../..
+python3 -B live_layer/viseca_mock.py
 ```
 
-Open `http://127.0.0.1:8090/` in a browser. Use **Pull request**, **Evaluate
+Open `http://127.0.0.1:8082/` in a browser. Use **Pull request**, **Evaluate
 request**, then choose **Approved**, **Not approved**, or **Human requested**
-and press the green **Submit decision** button. The rulebook recommends
-approval for the valid `SCEN0000` purchase and shows each check. The page
-blurs the checks while evaluation runs. **Reset demo** replays the one
-purchase. Since everything runs client-side from the bundled fixture, refreshing
-the page also resets it. For UI development with hot reload, run `npm run dev`
-inside `decision-lab/` instead. This static page is a UI rehearsal only; it
-does not exercise `viseca_mock.py`'s actual API contract.
+and press **Submit decision**. The default `SCEN0000` request is approved after
+the mandate, basket, spend, merchant-history, and saved-policy checks pass.
+Edits in the policy panel use optimistic revisions and affect the next incoming
+request; for example, reducing the daily cap causes the evaluation to decline.
+**Reset demo** replays the local request.
+
+For UI development, keep `viseca_mock.py` running and run `npm run dev` inside
+`decision-lab/`. Vite proxies `/mock` and `/v1` to the local mock service.
 
 To rehearse the **Viseca-shaped API itself** (separate from the browser demo
 above), run `viseca_mock.py` in terminal 1:
@@ -132,6 +158,15 @@ curl -sS "$LEASH_BASE_URL/v1/authorizations/MOCK_AU0001/decision" \
   -H "Authorization: Bearer $TEAM_API_KEY" \
   -H 'Content-Type: application/json' \
   -d '{"authorization_id":"MOCK_AU0001","decision":"step_up","reason_codes":["customer_confirmation"]}'
+```
+
+Resolve a recorded step-up through the separate customer path:
+
+```bash
+curl -sS "$LEASH_BASE_URL/v1/authorizations/MOCK_AU0001/resolve" \
+  -H "Authorization: Bearer $TEAM_API_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{"authorization_id":"MOCK_AU0001","decision":"approve"}'
 ```
 
 The local server accepts this decision for workflow rehearsal only. Its bootstrap
