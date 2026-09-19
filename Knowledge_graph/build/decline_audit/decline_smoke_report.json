@@ -1,0 +1,190 @@
+{
+  "assessments": {
+    "behavioral_context_only": 78,
+    "observable_rule_conflict": 106,
+    "unexplained_by_checked_factors": 75
+  },
+  "confirmed_per_event_decline_reasons_available": 0,
+  "data_quality": {
+    "errors": [],
+    "money_unit": "integer minor units; *_chf fields are CHF cents",
+    "row_counts": {
+      "accounts": 31,
+      "authorization_history": 4701,
+      "cards": 41,
+      "customers": 20,
+      "fx_rates": 4,
+      "items": 66,
+      "merchants": 58,
+      "purchase_attempt_items": 56,
+      "purchase_attempts": 45,
+      "scenario_authorities": 5,
+      "scenario_catalogue": 5
+    },
+    "valid": true,
+    "warnings": [
+      "FX rates are synthetic fixed constants dated 2026-08-01; historical billing uses supplied billing amounts, never future FX lookup.",
+      "Static catalogue has no historical change log; time correctness is guaranteed for event evidence, not reconstructed catalogue versions."
+    ]
+  },
+  "decline_count": 259,
+  "decline_types": {
+    "cash_withdrawal": 1,
+    "purchase": 258
+  },
+  "definitions": [
+    "Every evidence query uses timestamp < current timestamp. Equal-timestamp events are excluded.",
+    "First encounter means no prior record within the supplied history; absence is not proof of no lifetime relationship.",
+    "Approved purchases establish familiarity and amount baselines. Month-to-date account totals include approved refunds and cash withdrawals.",
+    "Above-p95 and unseen-hour checks require at least 20 earlier approved card purchases; burst means at least 3 earlier attempts in 10 minutes. These are diagnostic thresholds, not recovered issuer logic.",
+    "Foreign merchant means country != CH in this Swiss fixture. It is context, not a decline cause.",
+    "Observable rule conflicts compare supplied fields; issuer enforcement and account balance are unknown. The dictionary specifically documents card-lifecycle declines, but has no per-event reason code.",
+    "Factor groups overlap. Control rates use purchases only, and are descriptive associations, not causal estimates.",
+    "An unexplained case is not evidence of a system error or random decline; the actual logic is unavailable."
+  ],
+  "errors": [],
+  "factors": [
+    {
+      "factor": "card_inactive",
+      "historical_declines_with_factor": 6,
+      "label": "Card blocked or expired at event",
+      "purchase_approvals_with_factor": 0,
+      "purchase_decline_rate_percent": 100.0,
+      "purchase_declines_with_factor": 6
+    },
+    {
+      "factor": "transaction_limit",
+      "historical_declines_with_factor": 4,
+      "label": "Amount exceeds supplied per-transaction limit",
+      "purchase_approvals_with_factor": 0,
+      "purchase_decline_rate_percent": 100.0,
+      "purchase_declines_with_factor": 4
+    },
+    {
+      "factor": "monthly_limit",
+      "historical_declines_with_factor": 0,
+      "label": "Account month-to-date total plus attempt exceeds monthly limit",
+      "purchase_approvals_with_factor": 0,
+      "purchase_decline_rate_percent": null,
+      "purchase_declines_with_factor": 0
+    },
+    {
+      "factor": "online_disabled",
+      "historical_declines_with_factor": 0,
+      "label": "Ecommerce attempt while online payments disabled",
+      "purchase_approvals_with_factor": 0,
+      "purchase_decline_rate_percent": null,
+      "purchase_declines_with_factor": 0
+    },
+    {
+      "factor": "international_disabled",
+      "historical_declines_with_factor": 98,
+      "label": "Foreign merchant while international payments disabled",
+      "purchase_approvals_with_factor": 0,
+      "purchase_decline_rate_percent": 100.0,
+      "purchase_declines_with_factor": 98
+    },
+    {
+      "factor": "first_card_merchant",
+      "historical_declines_with_factor": 66,
+      "label": "First recorded card\u2013merchant encounter",
+      "purchase_approvals_with_factor": 897,
+      "purchase_decline_rate_percent": 6.76,
+      "purchase_declines_with_factor": 65
+    },
+    {
+      "factor": "no_approved_card_merchant",
+      "historical_declines_with_factor": 148,
+      "label": "No prior approved purchase at merchant on this card",
+      "purchase_approvals_with_factor": 937,
+      "purchase_decline_rate_percent": 13.56,
+      "purchase_declines_with_factor": 147
+    },
+    {
+      "factor": "first_customer_merchant",
+      "historical_declines_with_factor": 40,
+      "label": "First recorded customer\u2013merchant encounter",
+      "purchase_approvals_with_factor": 495,
+      "purchase_decline_rate_percent": 7.3,
+      "purchase_declines_with_factor": 39
+    },
+    {
+      "factor": "first_card_device",
+      "historical_declines_with_factor": 11,
+      "label": "First recorded use of device on this card",
+      "purchase_approvals_with_factor": 108,
+      "purchase_decline_rate_percent": 9.24,
+      "purchase_declines_with_factor": 11
+    },
+    {
+      "factor": "first_card_category",
+      "historical_declines_with_factor": 27,
+      "label": "First recorded merchant category on this card",
+      "purchase_approvals_with_factor": 383,
+      "purchase_decline_rate_percent": 6.36,
+      "purchase_declines_with_factor": 26
+    },
+    {
+      "factor": "first_card_country",
+      "historical_declines_with_factor": 29,
+      "label": "First recorded country on this card",
+      "purchase_approvals_with_factor": 93,
+      "purchase_decline_rate_percent": 23.77,
+      "purchase_declines_with_factor": 29
+    },
+    {
+      "factor": "amount_above_p95",
+      "historical_declines_with_factor": 19,
+      "label": "Amount above prior approved-purchase p95 (20+ samples)",
+      "purchase_approvals_with_factor": 205,
+      "purchase_decline_rate_percent": 8.48,
+      "purchase_declines_with_factor": 19
+    },
+    {
+      "factor": "burst_10m",
+      "historical_declines_with_factor": 13,
+      "label": "At least 3 earlier card attempts within 10 minutes",
+      "purchase_approvals_with_factor": 33,
+      "purchase_decline_rate_percent": 28.26,
+      "purchase_declines_with_factor": 13
+    },
+    {
+      "factor": "recent_decline_same_merchant",
+      "historical_declines_with_factor": 36,
+      "label": "Earlier decline at same merchant within 10 minutes",
+      "purchase_approvals_with_factor": 48,
+      "purchase_decline_rate_percent": 42.86,
+      "purchase_declines_with_factor": 36
+    },
+    {
+      "factor": "unusual_hour",
+      "historical_declines_with_factor": 48,
+      "label": "UTC hour absent from 20+ prior approved purchases",
+      "purchase_approvals_with_factor": 282,
+      "purchase_decline_rate_percent": 14.55,
+      "purchase_declines_with_factor": 48
+    },
+    {
+      "factor": "foreign_merchant",
+      "historical_declines_with_factor": 144,
+      "label": "Merchant country is not CH (context only)",
+      "purchase_approvals_with_factor": 634,
+      "purchase_decline_rate_percent": 18.51,
+      "purchase_declines_with_factor": 144
+    }
+  ],
+  "graph_validation": {
+    "dangling_relationships": [],
+    "duplicate_node_ids": 0,
+    "duplicate_relationship_ids": 0,
+    "invalid_provenance": [],
+    "node_count": 5132,
+    "relationship_count": 27792,
+    "represented_source_rows": 5032,
+    "source_row_count": 5032,
+    "unrepresented_rows": [],
+    "valid": true
+  },
+  "smoke_test_passed": true,
+  "source_rows": 4701
+}

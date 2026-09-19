@@ -1,0 +1,888 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KG Rootcause contracts",
+  "$defs": {
+    "Provenance": {
+      "type": "object",
+      "properties": {
+        "source_file": {
+          "type": "string"
+        },
+        "source_id": {
+          "type": "string"
+        },
+        "source_fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "event_time": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "source_as_of": {
+          "type": "string"
+        },
+        "graph_version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_file",
+        "source_id",
+        "source_fields",
+        "event_time",
+        "source_as_of",
+        "graph_version"
+      ],
+      "additionalProperties": false
+    },
+    "GraphNode": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "properties": {
+          "type": "object"
+        },
+        "provenance": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Provenance"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "properties",
+        "provenance"
+      ],
+      "additionalProperties": false
+    },
+    "GraphRelationship": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        },
+        "target": {
+          "type": "string"
+        },
+        "provenance": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Provenance"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "source",
+        "target",
+        "provenance"
+      ],
+      "additionalProperties": false
+    },
+    "Graph": {
+      "type": "object",
+      "properties": {
+        "nodes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/GraphNode"
+          }
+        },
+        "relationships": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/GraphRelationship"
+          }
+        }
+      },
+      "required": [
+        "nodes",
+        "relationships"
+      ],
+      "additionalProperties": false
+    },
+    "KnowledgeSnapshot": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string"
+        },
+        "snapshot_id": {
+          "type": "string"
+        },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/GraphNode"
+          }
+        },
+        "relationships": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/GraphRelationship"
+          }
+        }
+      },
+      "required": [
+        "version",
+        "snapshot_id",
+        "nodes",
+        "relationships"
+      ],
+      "additionalProperties": false
+    },
+    "SemanticRule": {
+      "type": "object",
+      "properties": {
+        "concept": {
+          "type": "string"
+        },
+        "field": {
+          "type": "string"
+        },
+        "operator": {
+          "enum": [
+            "<=",
+            "==",
+            "in",
+            "requires"
+          ]
+        },
+        "value": {},
+        "source_text": {
+          "type": "string"
+        },
+        "span": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "confirmation_status": {
+          "enum": [
+            "unconfirmed",
+            "simulation_assumption"
+          ]
+        }
+      },
+      "required": [
+        "concept",
+        "field",
+        "operator",
+        "value",
+        "source_text",
+        "span",
+        "confirmation_status"
+      ],
+      "additionalProperties": false
+    },
+    "SemanticPolicyDraft": {
+      "type": "object",
+      "properties": {
+        "ontology_version": {
+          "type": "string"
+        },
+        "instruction": {
+          "type": "string"
+        },
+        "rules": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SemanticRule"
+          }
+        },
+        "unresolved": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "confirmation_status": {
+          "const": "unconfirmed"
+        }
+      },
+      "required": [
+        "ontology_version",
+        "instruction",
+        "rules",
+        "unresolved",
+        "confirmation_status"
+      ],
+      "additionalProperties": false
+    },
+    "ConfirmedPolicy": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "confirmed",
+            "simulation_assumption"
+          ]
+        },
+        "scope": {
+          "type": "string"
+        },
+        "maximum_order_cents": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rolling_limit_cents": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rolling_days": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "item_categories": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "fulfillment_method": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "version",
+        "status",
+        "scope",
+        "maximum_order_cents",
+        "rolling_limit_cents",
+        "rolling_days",
+        "item_categories",
+        "fulfillment_method"
+      ],
+      "additionalProperties": false
+    },
+    "KGContext": {
+      "type": "object",
+      "properties": {
+        "authorization_id": {
+          "type": "string"
+        },
+        "as_of": {
+          "type": "string"
+        },
+        "snapshot_id": {
+          "type": "string"
+        },
+        "entities": {
+          "type": "object"
+        },
+        "historical_evidence": {
+          "type": "object",
+          "properties": {
+            "card_merchant": {
+              "$ref": "#/$defs/Summary"
+            },
+            "card_device": {
+              "$ref": "#/$defs/Summary"
+            },
+            "card_category": {
+              "$ref": "#/$defs/Summary"
+            },
+            "card_country": {
+              "$ref": "#/$defs/Summary"
+            },
+            "customer_device": {
+              "$ref": "#/$defs/Summary"
+            },
+            "amount_profile": {
+              "$ref": "#/$defs/Summary"
+            },
+            "recent_attempts": {
+              "$ref": "#/$defs/Summary"
+            },
+            "time_of_day": {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/$defs/Summary"
+              }
+            },
+            "initiator_activity": {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/$defs/Summary"
+              }
+            },
+            "duplicate_candidates": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "retry_candidates": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "card_merchant",
+            "card_device",
+            "card_category",
+            "card_country",
+            "customer_device",
+            "amount_profile",
+            "recent_attempts",
+            "time_of_day",
+            "initiator_activity",
+            "duplicate_candidates",
+            "retry_candidates"
+          ],
+          "additionalProperties": false
+        },
+        "semantic_matches": {
+          "type": "object"
+        },
+        "missing_evidence": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "overlay": {
+          "$ref": "#/$defs/Graph"
+        },
+        "versions": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "authorization_id",
+        "as_of",
+        "snapshot_id",
+        "entities",
+        "historical_evidence",
+        "semantic_matches",
+        "missing_evidence",
+        "overlay",
+        "versions"
+      ],
+      "additionalProperties": false
+    },
+    "Check": {
+      "type": "object",
+      "properties": {
+        "rule": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "hard",
+            "uncertainty"
+          ]
+        },
+        "status": {
+          "enum": [
+            "pass",
+            "fail",
+            "unknown"
+          ]
+        },
+        "expected": {},
+        "observed": {},
+        "source_event_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "rule",
+        "kind",
+        "status",
+        "expected",
+        "observed",
+        "source_event_ids"
+      ],
+      "additionalProperties": false
+    },
+    "GuardrailCheckInput": {
+      "type": "object",
+      "properties": {
+        "transaction": {
+          "type": "object"
+        },
+        "confirmed_policy": {
+          "$ref": "#/$defs/ConfirmedPolicy"
+        },
+        "context": {
+          "$ref": "#/$defs/KGContext"
+        },
+        "checks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Check"
+          }
+        }
+      },
+      "required": [
+        "transaction",
+        "confirmed_policy",
+        "context",
+        "checks"
+      ],
+      "additionalProperties": false
+    },
+    "Evidence": {
+      "type": "object",
+      "properties": {
+        "reason_code": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "expected": {},
+        "observed": {},
+        "source_event_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "evidence_contribution_percent": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        }
+      },
+      "required": [
+        "reason_code",
+        "status",
+        "expected",
+        "observed",
+        "source_event_ids",
+        "evidence_contribution_percent"
+      ],
+      "additionalProperties": false
+    },
+    "Path": {
+      "type": "object",
+      "properties": {
+        "path_id": {
+          "type": "string"
+        },
+        "reason_code": {
+          "type": "string"
+        },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "relationships": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "source_event_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "contribution_percent": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "path_id",
+        "reason_code",
+        "nodes",
+        "relationships",
+        "source_event_ids",
+        "contribution_percent"
+      ],
+      "additionalProperties": false
+    },
+    "Cause": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "hard_rule",
+            "uncertainty",
+            "all_checks_pass"
+          ]
+        },
+        "rules": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "decision_contribution_percent": {
+          "const": 100
+        }
+      },
+      "required": [
+        "type",
+        "rules",
+        "decision_contribution_percent"
+      ],
+      "additionalProperties": false
+    },
+    "Highlight": {
+      "type": "object",
+      "properties": {
+        "graph_id": {
+          "type": "string"
+        },
+        "reason_code": {
+          "type": "string"
+        },
+        "highlight_level": {
+          "enum": [
+            "direct",
+            "supporting",
+            "counter"
+          ]
+        },
+        "highlight_score": {
+          "type": "number"
+        },
+        "contribution_percent": {
+          "type": "number"
+        },
+        "source_event_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "graph_id",
+        "reason_code",
+        "highlight_level",
+        "highlight_score",
+        "contribution_percent",
+        "source_event_ids"
+      ],
+      "additionalProperties": false
+    },
+    "KG_Rootcause": {
+      "type": "object",
+      "properties": {
+        "authorization_id": {
+          "type": "string"
+        },
+        "decision": {
+          "enum": [
+            "approve",
+            "step_up",
+            "decline"
+          ]
+        },
+        "decision_cause": {
+          "$ref": "#/$defs/Cause"
+        },
+        "supporting_evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          }
+        },
+        "counter_evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          }
+        },
+        "root_cause_paths": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Path"
+          }
+        },
+        "supporting_event_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "highlight_graph": {
+          "$ref": "#/$defs/Graph"
+        },
+        "highlights": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Highlight"
+          }
+        },
+        "contribution_label": {
+          "const": "explanation contributions; not proven fraud causes"
+        },
+        "versions": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "authorization_id",
+        "decision",
+        "decision_cause",
+        "supporting_evidence",
+        "counter_evidence",
+        "root_cause_paths",
+        "supporting_event_ids",
+        "highlight_graph",
+        "highlights",
+        "contribution_label",
+        "versions"
+      ],
+      "additionalProperties": false
+    },
+    "State": {
+      "type": "object",
+      "properties": {
+        "events": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "processed": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "events",
+        "processed"
+      ],
+      "additionalProperties": false
+    },
+    "SimulationResult": {
+      "type": "object",
+      "properties": {
+        "input": {
+          "type": "object"
+        },
+        "dynamic_context": {
+          "$ref": "#/$defs/KGContext"
+        },
+        "simulated_guardrail_checks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Check"
+          }
+        },
+        "KG_Rootcause": {
+          "$ref": "#/$defs/KG_Rootcause"
+        },
+        "highlighted_graph_subset": {
+          "$ref": "#/$defs/Graph"
+        },
+        "state_before": {
+          "$ref": "#/$defs/State"
+        },
+        "state_after": {
+          "$ref": "#/$defs/State"
+        }
+      },
+      "required": [
+        "input",
+        "dynamic_context",
+        "simulated_guardrail_checks",
+        "KG_Rootcause",
+        "highlighted_graph_subset",
+        "state_before",
+        "state_after"
+      ],
+      "additionalProperties": false
+    },
+    "SimulationReport": {
+      "type": "object",
+      "properties": {
+        "request_count": {
+          "type": "number"
+        },
+        "approve_count": {
+          "type": "number"
+        },
+        "step_up_count": {
+          "type": "number"
+        },
+        "decline_count": {
+          "type": "number"
+        },
+        "average_evaluation_latency_ms": {
+          "type": "number"
+        },
+        "p95_evaluation_latency_ms": {
+          "type": "number"
+        },
+        "context_coverage_percent": {
+          "type": "number"
+        },
+        "explanation_completeness_percent": {
+          "type": "number"
+        },
+        "valid_provenance_path_percent": {
+          "type": "number"
+        },
+        "missing_evidence_count": {
+          "type": "number"
+        },
+        "future_leakage_count": {
+          "type": "number"
+        },
+        "deterministic_replay_percent": {
+          "type": "number"
+        },
+        "invalid_graph_reference_count": {
+          "type": "number"
+        },
+        "duplicate_state_updates": {
+          "type": "number"
+        },
+        "baseline_passed": {
+          "type": "boolean"
+        },
+        "policy": {
+          "$ref": "#/$defs/ConfirmedPolicy"
+        },
+        "replay_comparison": {
+          "type": "string"
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "request_count",
+        "approve_count",
+        "step_up_count",
+        "decline_count",
+        "average_evaluation_latency_ms",
+        "p95_evaluation_latency_ms",
+        "context_coverage_percent",
+        "explanation_completeness_percent",
+        "valid_provenance_path_percent",
+        "missing_evidence_count",
+        "future_leakage_count",
+        "deterministic_replay_percent",
+        "invalid_graph_reference_count",
+        "duplicate_state_updates",
+        "baseline_passed",
+        "policy",
+        "replay_comparison",
+        "limitations"
+      ],
+      "additionalProperties": false
+    },
+    "Summary": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "enum": [
+            "known",
+            "known_but_unapproved",
+            "no_prior_relationship",
+            "not_applicable"
+          ]
+        },
+        "approved_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "declined_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "approved_purchase_cents": {
+          "type": "integer"
+        },
+        "net_approved_cents": {
+          "type": "integer"
+        },
+        "amount_p50_cents": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "amount_p95_cents": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "first_approved_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "last_approved_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "supporting_event_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "as_of": {
+          "type": "string"
+        },
+        "calculation_version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "approved_count",
+        "declined_count",
+        "approved_purchase_cents",
+        "net_approved_cents",
+        "amount_p50_cents",
+        "amount_p95_cents",
+        "first_approved_at",
+        "last_approved_at",
+        "supporting_event_ids",
+        "as_of",
+        "calculation_version"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

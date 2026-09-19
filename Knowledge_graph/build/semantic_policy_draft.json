@@ -1,0 +1,58 @@
+{
+  "confirmation_status": "unconfirmed",
+  "instruction": "Order our household groceries for delivery. Keep each order at or below CHF 120 including delivery, and keep the total across any seven days at or below CHF 300. Ask me when uncertain.",
+  "ontology_version": "ontology-v1",
+  "rules": [
+    {
+      "concept": "Delivery",
+      "confirmation_status": "unconfirmed",
+      "field": "fulfillment_method",
+      "operator": "requires",
+      "source_text": "delivery",
+      "span": [
+        34,
+        42
+      ],
+      "value": null
+    },
+    {
+      "concept": "Delivery",
+      "confirmation_status": "unconfirmed",
+      "field": "fulfillment_method",
+      "operator": "requires",
+      "source_text": "delivery",
+      "span": [
+        90,
+        98
+      ],
+      "value": null
+    },
+    {
+      "concept": "UnscopedAmountLimit",
+      "confirmation_status": "unconfirmed",
+      "field": "unresolved",
+      "operator": "<=",
+      "source_text": "at or below CHF 120",
+      "span": [
+        60,
+        79
+      ],
+      "value": 12000
+    },
+    {
+      "concept": "UnscopedAmountLimit",
+      "confirmation_status": "unconfirmed",
+      "field": "unresolved",
+      "operator": "<=",
+      "source_text": "at or below CHF 300",
+      "span": [
+        141,
+        160
+      ],
+      "value": 30000
+    }
+  ],
+  "unresolved": [
+    "Draft extraction only: confirm rule scope, values, and every unmapped clause before use."
+  ]
+}

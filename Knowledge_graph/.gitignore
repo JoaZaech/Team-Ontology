@@ -1,0 +1,5 @@
+# Local Python environment and caches only; generated build outputs are shared.
+.venv/
+__pycache__/
+.pytest_cache/
+*.py[cod]

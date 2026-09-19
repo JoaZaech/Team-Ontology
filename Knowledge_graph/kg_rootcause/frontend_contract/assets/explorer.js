@@ -1,0 +1,80 @@
+(()=>{
+const root=document.getElementById('precomputed-kg-explorer'), get=s=>root.querySelector(s), data=JSON.parse(get('[data-payload]').textContent), cardSelect=get('[data-card]'), dimSelect=get('[data-dimension]'), relSelect=get('[data-relationship]'), graph=get('[data-graph]');
+const dimensions={card_merchant:['merchant_id','USED_MERCHANT'],card_device:['customer_device_id','USED_DEVICE'],card_category:['merchant_category','PURCHASED_CATEGORY'],card_country:['merchant_country','USED_COUNTRY'],customer_device:['customer_device_id','CUSTOMER_USED_DEVICE'],card_amount:['card_id','AMOUNT_PROFILE'],initiator_activity:['initiator_type','INITIATOR_ACTIVITY'],time_of_day:['hour_utc','ACTIVITY_AT_HOUR']};
+let rows=[],selected=0,expanded=false,initialView=true;
+const money=v=>v===null?'No approved purchases':new Intl.NumberFormat('en-CH',{style:'currency',currency:'CHF'}).format(v/100);
+function option(el,value,label){const o=document.createElement('option');o.value=value;o.textContent=label;el.append(o)}
+function label(r){const k=dimSelect.value,v=r[0][dimensions[k][0]];if(k==='card_merchant')return `${data.merchants[v]} · ${v}`;if(k==='time_of_day')return `${String(v).padStart(2,'0')}:00–${String(v).padStart(2,'0')}:59 UTC`;if(k==='card_amount')return 'Historical amount profile';return String(v).replaceAll('_',' ')}
+Object.entries(data.cards).forEach(([id,c])=>option(cardSelect,id,`${id} · ${c[2]} · ${c[3]}`));
+function update(){const card=cardSelect.value,c=data.cards[card],dim=dimSelect.value;rows=data.aggregates[dim].filter(r=>dim==='customer_device'?r[0].customer_id===c[1]:r[0].card_id===card).sort((a,b)=>b[1]-a[1]||label(a).localeCompare(label(b)));selected=0;expanded=false;if(initialView){const target=rows.findIndex(r=>data.focus_authorization_id&&r[9].includes(data.focus_authorization_id));if(target>=0){selected=target;expanded=true;}initialView=false;}relSelect.replaceChildren();rows.forEach((r,i)=>option(relSelect,i,`${label(r)} — ${r[1]} approved purchases`));relSelect.value=String(selected);get('[data-chain]').textContent=`${c[2]} (${c[1]}) → ${c[0]} → ${card}`;show()}
+function show(){const r=rows[selected];if(!r)return;get('[data-title]').textContent=label(r);const body=get('[data-metrics]');body.replaceChildren();const metrics=[['Approved purchases',r[1]],['Declined authorizations',r[2]],['Approved purchase total',money(r[3])],['Net approved total, including refunds / cash',money(r[4])],['Purchase amount median / p95',`${money(r[5])} / ${money(r[6])}`],['First / last approved purchase',`${r[7]?r[7].slice(0,10):'None'} / ${r[8]?r[8].slice(0,10):'None'}`]];for(const [k,v]of metrics){const tr=document.createElement('tr'),th=document.createElement('th'),td=document.createElement('td');th.scope='row';th.textContent=k;td.textContent=v;td.className='text-end tabular-nums';tr.append(th,td);body.append(tr)}get('[data-source-label]').textContent=`${r[9].length} supporting authorization records`;get('[data-events]').textContent=r[9].join(' · ');showDeclines();draw()}
+function node(tag,attrs,text){const el=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const[k,v]of Object.entries(attrs))el.setAttribute(k,v);if(text!==undefined)el.textContent=text;return el}
+function draw(){
+ const width=Math.max(300,Math.round(graph.getBoundingClientRect().width)),wide=width>=650,indices=rows.slice(0,6).map((_,i)=>i);if(selected>=6)indices[5]=selected;
+ const maximum=Math.max(1,...data.aggregates[dimSelect.value].map(r=>r[2]));
+ const intensity=count=>.16+.42*Math.log1p(count)/Math.log1p(maximum);
+ const layouts=[];let cursor=wide?30:110;
+ for(const i of indices){const ids=i===selected&&expanded?rows[i][9].filter(id=>data.declines[id]):[],span=wide?Math.max(74,ids.length*86):78+(ids.length?ids.length*86+12:0);layouts.push({i,ids,start:cursor,y:wide?cursor+span/2:cursor+30});cursor+=span;}
+ const height=Math.max(230,cursor+25),center=height/2;graph.setAttribute('viewBox',`0 0 ${width} ${height}`);graph.style.height=height+'px';graph.replaceChildren();
+ graph.append(node('title',{},'Historical relationship graph with declined authorization branches'));
+ const defs=node('defs',{}),marker=node('marker',{id:'kg-evidence-arrow',viewBox:'0 0 10 10',refX:9,refY:5,markerWidth:5,markerHeight:5,orient:'auto'});marker.append(node('path',{d:'M0 0 L10 5 L0 10 Z',fill:'var(--muted-foreground)'}));defs.append(marker);graph.append(defs);
+ function edge(x1,y1,x2,y2,color='var(--border)'){graph.append(node('path',{d:`M${x1} ${y1} C${(x1+x2)/2} ${y1},${(x1+x2)/2} ${y2},${x2} ${y2}`,fill:'none',stroke:color,'stroke-width':1.5,'marker-end':'url(#kg-evidence-arrow)'}))}
+ function box(x,y,w,title,subtitle,fill,opacity,action,attribute){const g=node('g',attribute||{});g.append(node('rect',{x:x-w/2,y:y-24,width:w,height:48,rx:7,fill,'fill-opacity':opacity}));const max=Math.floor(w/6.3);g.append(node('text',{x,y:y-3,'text-anchor':'middle'},title.length>max?title.slice(0,max-1)+'…':title));g.append(node('text',{x,y:y+14,'text-anchor':'middle'},subtitle));if(action){g.style.cursor='pointer';g.addEventListener('click',action)}graph.append(g)}
+ const cardX=wide?57:width/2,cardY=wide?center:42;
+ for(const l of layouts){const r=rows[l.i],chosen=l.i===selected,relX=wide?width*.43:width/2,evtX=width-100;
+  const select=()=>{expanded=selected===l.i?!expanded:true;selected=l.i;relSelect.value=String(l.i);show()};
+  if(wide)edge(cardX+48,cardY,relX-98,l.y,chosen?'var(--viz-series-1)':'var(--border)');
+  else{graph.append(node('path',{d:`M${cardX} 66 L${cardX} 82 L12 82 L12 ${l.y} L${relX-98} ${l.y}`,fill:'none',stroke:'var(--border)','stroke-width':1,'marker-end':'url(#kg-evidence-arrow)'}))}
+  box(relX,l.y,196,label(r).split(' · ')[0],`${r[1]} purchases · ${r[2]} declines`,r[2]?'var(--red)':'var(--muted)',r[2]?intensity(r[2]):.5,select,{'data-row':l.i,'data-decline-count':r[2]});
+  l.ids.forEach((id,j)=>{const y=wide?l.start+38+j*86:l.y+86+j*86,x=wide?evtX:width/2;
+   if(wide)edge(relX+98,l.y,x-94,y,'var(--red)');else graph.append(node('path',{d:`M${relX} ${l.y+24} L${relX-112} ${l.y+24} L${relX-112} ${y} L${x-94} ${y}`,fill:'none',stroke:'var(--red)','stroke-width':1,'marker-end':'url(#kg-evidence-arrow)'}));
+   box(x,y,188,id,`${money(data.declines[id].billing_cents)} · Declined`,'var(--red)',intensity(1),()=>{get('[data-decline]').value=id;showDecline();draw()}, {'data-declined-event':id});
+   const reasonText=node('text',{x,y:y+40,'text-anchor':'middle'},data.declines[id].reason_short||'Reason not supplied');if(data.declines[id].context_note){reasonText.style.fill='var(--red)';reasonText.style.fontWeight='500';}graph.append(reasonText);
+
+  });
+ }
+ box(cardX,cardY,96,dimSelect.value==='customer_device'?'Customer':'Card',dimSelect.value==='customer_device'?data.cards[cardSelect.value][1]:cardSelect.value,'var(--yellow)',.28,null,{'data-card-node':'true'});
+ get('[data-count]').textContent=`${dimensions[dimSelect.value][1]} · ${indices.length} of ${rows.length} relationships · Red intensity = decline count (1–${maximum} across this relationship type). Historical outcomes. Click a node to expand/collapse declines.`;
+}
+function fillFacts(selector,facts){const body=get(selector);body.replaceChildren();for(const [key,value] of facts){const tr=document.createElement('tr'),th=document.createElement('th'),td=document.createElement('td');th.scope='row';th.textContent=key;td.textContent=value;tr.append(th,td);body.append(tr)}}
+function showDeclines(){
+ const related=rows[selected][9].filter(id=>data.declines[id]),select=get('[data-decline]');select.replaceChildren();
+ related.forEach(id=>{const d=data.declines[id];option(select,id,`${id} · ${d.timestamp.slice(0,10)} · ${money(d.billing_cents)}`)});
+ get('[data-decline-count]').textContent=related.length?`${related.length} historical decline${related.length===1?'':'s'} in this relationship`:'No historical declines in this relationship';
+ get('[data-decline-control]').hidden=!related.length;get('[data-decline-detail]').hidden=!related.length;
+ if(related.length){if(related.includes(data.focus_authorization_id)){select.value=data.focus_authorization_id;}showDecline();}else{get('[data-context-note]').hidden=true;get('[data-context-note]').textContent='';}
+ const simulated=data.simulated.filter(s=>s.card_id===cardSelect.value),body=get('[data-simulation-rows]');body.replaceChildren();get('[data-simulation]').hidden=!simulated.length;
+ for(const s of simulated){const tr=document.createElement('tr');let reasons=s.checks.map(c=>c.rule==='maximum_order'?`Order ${money(c.observed)} exceeds ${money(c.expected)}`:c.rule==='rolling_budget'?`Seven-day total with order ${money(c.observed)} exceeds ${money(c.expected)}`:c.rule==='item_category'?`Basket categories ${c.observed.join(', ')}; allowed ${c.expected.join(', ')}`:`${c.rule}: ${JSON.stringify(c.observed)}; expected ${JSON.stringify(c.expected)}`);for(const value of [s.id,money(s.amount),reasons.join(' · ')]){const td=document.createElement('td');td.textContent=value;tr.append(td)}body.append(tr)}
+}
+function showDecline(){
+ const id=get('[data-decline]').value,d=data.declines[id];if(!d)return;
+ const note=get('[data-context-note]');note.hidden=!d.context_note;note.textContent=d.context_note?'Timestamp review — '+d.context_note:'';
+ get('[data-decline-chain]').textContent=`${d.card_id} → ${d.merchant_id} → ${id} → DECLINED`;
+ fillFacts('[data-decline-facts]',[
+ [d.context_note?'Decline reason / contextual finding':'Recorded decline reason',d.context_note?d.context_note:'Not supplied in the historical dataset'],
+ ['What was attempted',d.description],['Transaction type',d.transaction_type],
+ ['Merchant',`${data.merchants[d.merchant_id]} (${d.merchant_id})`],
+ ['Amount',`${(d.amount_cents/100).toFixed(2)} ${d.currency} · billed ${money(d.billing_cents)}`],
+ ['Timestamp',d.timestamp],['Category / country',`${d.merchant_category} / ${d.merchant_country}`],
+ ['Channel / initiator',`${d.channel} / ${d.initiator_type}`],['Card status at attempt',d.card_status],
+ ['Device',d.device||'No cardholder device involved'],['Source',`authorization_history.csv · ${id}`]
+ ]);
+ const reasonRows=get('[data-decline-facts]').children;
+ if(d.context_note){for(const cell of reasonRows[0].children){cell.style.color='var(--red)';cell.style.fontWeight='500';}reasonRows[0].style.background='color-mix(in srgb, var(--red) 12%, transparent)';}
+ fillFacts('[data-prior-facts]',[
+ ['Confirmed cause','Unavailable; the facts below do not establish causation'],
+ ['Prior approved merchant purchases',d.prior_merchant_purchases],
+ ['Prior approved device purchases',d.prior_device_purchases===null?'Not applicable':d.prior_device_purchases],
+ ['Prior card purchase p95',money(d.prior_p95_cents)],
+ ['Prior approved card purchases',d.prior_purchase_count],
+ ['Earlier card attempts within ten minutes',d.prior_attempts_10m],
+ ['Account per-transaction limit',money(d.account_limit_cents)],
+ ['Evidence cutoff',`${d.timestamp} (exclusive)`]
+ ]);
+ get('[data-prior-ids]').textContent=d.prior_supporting_ids.length?`Prior merchant evidence: ${d.prior_supporting_ids.join(' · ')}`:'No earlier merchant records for this card.';
+}
+get('[data-decline]').addEventListener('change',()=>{showDecline();draw()});
+
+if(data.focus_authorization_id){cardSelect.value=data.declines[data.focus_authorization_id].card_id;}dimSelect.value='card_merchant';
+cardSelect.addEventListener('change',update);dimSelect.addEventListener('change',update);relSelect.addEventListener('change',()=>{selected=Number(relSelect.value);expanded=true;show()});new ResizeObserver(()=>{if(rows.length)draw()}).observe(graph.parentElement);update();
+})();

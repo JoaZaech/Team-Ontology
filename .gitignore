@@ -7,3 +7,15 @@ knowledge_graph/tests/__pycache__/
 knowledge_graph/.pytest_cache/
 live_layer/__pycache__/
 live_layer/*.sqlite3
+
+# Local secrets and machine/editor state
+.env
+.env.*
+!.env.example
+!.env.sample
+.DS_Store
+*.swp
+*.swo
+__pycache__/
+.pytest_cache/
+*.py[cod]

@@ -1,0 +1,38 @@
+{
+  "approve_count": 5,
+  "average_evaluation_latency_ms": 171.2202001,
+  "baseline_passed": true,
+  "context_coverage_percent": 100.0,
+  "decline_count": 5,
+  "deterministic_replay_percent": 100.0,
+  "duplicate_state_updates": 0,
+  "explanation_completeness_percent": 100.0,
+  "future_leakage_count": 0,
+  "invalid_graph_reference_count": 0,
+  "limitations": [
+    "Synthetic data; simulation policy is an explicit interpretation of SCEN0001, not a confirmed mandate or expected-decision answer key.",
+    "Source graph contains all fixtures; context evidence reads only prior history and this run's earlier decisions.",
+    "Static catalogue validity cannot be reconstructed without effective-date records.",
+    "Semantic extraction is a conservative draft, not a complete natural-language policy compiler.",
+    "Index is card-partitioned; aggregates scan the time-filtered card history. No bounded prefix aggregates or production latency target yet.",
+    "No fraud model or live-layer integration. Step-up resolution is not implemented."
+  ],
+  "missing_evidence_count": 0,
+  "p95_evaluation_latency_ms": 342.845,
+  "policy": {
+    "fulfillment_method": "delivery",
+    "item_categories": [
+      "groceries"
+    ],
+    "maximum_order_cents": 12000,
+    "rolling_days": 7,
+    "rolling_limit_cents": 30000,
+    "scope": "SCEN0001",
+    "status": "simulation_assumption",
+    "version": "simulation-scen0001-v1"
+  },
+  "replay_comparison": "Every business output compared recursively, including context, checks, explanation, highlights, and before/after state. Measured wall-clock latency is separate non-deterministic telemetry.",
+  "request_count": 10,
+  "step_up_count": 0,
+  "valid_provenance_path_percent": 100.0
+}
