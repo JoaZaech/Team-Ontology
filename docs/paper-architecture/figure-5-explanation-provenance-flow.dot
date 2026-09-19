@@ -1,0 +1,29 @@
+digraph G {
+  graph [rankdir=LR, bgcolor="white", pad=0.25, nodesep=0.38, ranksep=0.72,
+         fontname="Helvetica", fontsize=22, fontcolor="#12355B",
+         label="Figure 5. Decision explanation and provenance flow\nActual rule causes are separated from contextual and probabilistic contributors.", labelloc=t];
+  node [shape=box, style="rounded,filled,dashed", fontname="Helvetica", fontsize=11,
+        color="#246BCE", fillcolor="#EAF2FC", fontcolor="#17212B", penwidth=1.7, margin="0.18,0.11"];
+  edge [fontname="Helvetica", fontsize=9, color="#12355B", fontcolor="#12355B", penwidth=1.5, arrowsize=0.75];
+
+  rules [label="Rule execution trace\nactual failed/passed constraints", style="rounded,filled", color="#238636", fillcolor="#EAF7EC"];
+  graph_evidence [label="Graph evidence\nfacts + records + as-of time", color="#159A9C", fillcolor="#E7F7F6"];
+  gaussian [label="Gaussian evidence\ndeviation likelihood + reference profile", color="#6F42C1", fillcolor="#F2ECFB"];
+  bayes [label="Bayesian evidence\nposterior + sensitivity analysis", color="#6F42C1", fillcolor="#F2ECFB"];
+  package [label="Evidence package\ndecision • reason codes • counter-evidence\npolicy/model/feature versions • provenance"];
+  renderer [label="Explanation renderer\ndeterministic templates first\noptional language verbalization", color="#D97706", fillcolor="#FFF4DE"];
+  customer [label="Customer explanation"];
+  analyst [label="Analyst investigation"];
+  audit [label="Audit record"];
+  caution [shape=note, label="Rule failure = decision cause\nGraph/model signals = contributing evidence\nFeature contribution ≠ real-world causation", color="#C9363E", fillcolor="#FDEBEC", fontcolor="#C9363E", style="filled", fontsize=10];
+
+  rules -> package [color="#238636"];
+  graph_evidence -> package [color="#159A9C"];
+  gaussian -> package [color="#6F42C1"];
+  bayes -> package [color="#6F42C1"];
+  package -> renderer;
+  renderer -> customer;
+  renderer -> analyst;
+  renderer -> audit;
+  package -> caution [style=dotted, arrowhead=none, color="#C9363E"];
+}

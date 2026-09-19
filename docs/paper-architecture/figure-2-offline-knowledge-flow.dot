@@ -1,0 +1,28 @@
+digraph G {
+  graph [rankdir=LR, bgcolor="white", pad=0.25, nodesep=0.38, ranksep=0.65,
+         fontname="Helvetica", fontsize=22, fontcolor="#12355B",
+         label="Figure 2. Offline and streaming knowledge-construction flow\nHistorical events become time-correct summaries and model parameters for bounded online use.", labelloc=t];
+  node [shape=box, style="rounded,filled,dashed", fontname="Helvetica", fontsize=11,
+        color="#246BCE", fillcolor="#EAF2FC", fontcolor="#17212B", penwidth=1.7, margin="0.18,0.12"];
+  edge [fontname="Helvetica", fontsize=9, color="#12355B", fontcolor="#12355B", penwidth=1.5, arrowsize=0.75];
+
+  history [label="Authorization history\npurchases • declines • refunds\nevent-time order", style="rounded,filled"];
+  validate [label="Validation and normalization\nIDs • currency • lifecycle\nrefund linkage • no future leakage"];
+  aggregate [label="Temporal aggregation\ncounts • recency • percentiles\nrolling windows", color="#159A9C", fillcolor="#E7F7F6"];
+  archive [label="Historical archive\ncomplete events for replay and investigation"];
+  projection [label="Online knowledge projection\nCard→Merchant • Card→Device\nCard→Category • recent activity", color="#159A9C", fillcolor="#E7F7F6"];
+  gaussian [label="Gaussian profile parameters\nlocation • covariance / mixture\ncalibration window", color="#6F42C1", fillcolor="#F2ECFB"];
+  bayes [label="Bayesian parameters\nexpert priors + labelled outcomes", color="#6F42C1", fillcolor="#F2ECFB"];
+  provenance [label="Versioned provenance\nas-of time • source window\nfeature version • record count", color="#D97706", fillcolor="#FFF4DE"];
+
+  history -> validate -> aggregate;
+  aggregate -> archive;
+  aggregate -> projection;
+  aggregate -> gaussian;
+  aggregate -> bayes;
+  projection -> provenance [label="annotate", color="#D97706", fontcolor="#D97706"];
+
+  example [shape=note, label="Example materialized relation\nCard CA0011 → Merchant ME0022\napproved_count=8 • last_seen=12d", color="#159A9C", fillcolor="#E7F7F6", style="filled", fontsize=10];
+  projection -> example [style=dotted, arrowhead=none, color="#159A9C"];
+}
+
