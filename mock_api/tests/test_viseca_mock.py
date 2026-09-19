@@ -7,6 +7,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import Mock
 
+from decision_receipts import DecisionReceiptLedger
 from rule_client import RuleServiceClient
 from rule_service_fixture import running_rule_service
 from testing_support import check_named
@@ -177,6 +178,27 @@ class VisecaMockTests(unittest.TestCase):
             self.assertEqual(transaction["agent_decision"], "step_up")
             self.assertEqual(transaction["final_decision"], "approve")
             self.assertEqual(transaction["status"], "approved")
+        finally:
+            state.close()
+
+    def test_activity_snapshot_uses_supplied_projection_and_receipt_ledger(self):
+        ledger = DecisionReceiptLedger(":memory:")
+        projection = Mock()
+        projection.snapshot.return_value = {
+            "updated_at": "2026-09-19T12:00:00Z",
+            "processing": False,
+            "transactions": [],
+        }
+        state = MockVisecaState(
+            rule_client=Mock(),
+            receipt_ledger=ledger,
+            activity_projection=projection,
+        )
+        try:
+            snapshot = state.activity_snapshot()
+            self.assertEqual(snapshot["transactions"], [])
+            self.assertEqual(snapshot["flywheel"], ledger.outbox_status())
+            projection.snapshot.assert_called_once_with()
         finally:
             state.close()
 

@@ -300,3 +300,18 @@ test("enforces a CHF 10 policy change and declines AU0001 in the frontend", asyn
     ruleEngineHttpMs: Number((await responseDurationMs(evaluationResponse)).toFixed(2)),
   });
 });
+
+test("retains local policy selections when the user returns to settings", async ({ page }) => {
+  await page.goto("/#settings");
+  await expect(page.getByRole("heading", { name: "Wallet policies" })).toBeVisible();
+
+  const notificationPolicy = page.getByRole("button", { name: "Disable Instant payment alerts" });
+  await notificationPolicy.click();
+  await expect(notificationPolicy).toHaveAttribute("aria-checked", "false");
+  await page.locator(".policy-tabs").getByRole("button", { name: "Notifications" }).click();
+  await page.getByRole("button", { name: "Open agent simulation" }).click();
+
+  await page.goto("/#settings");
+  await expect(page.getByRole("button", { name: "Enable Instant payment alerts" })).toHaveAttribute("aria-checked", "false");
+  await expect(page.locator(".policy-tabs").getByRole("button", { name: "Notifications" })).toHaveAttribute("aria-selected", "true");
+});

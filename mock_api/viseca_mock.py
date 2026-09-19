@@ -580,7 +580,12 @@ class MockVisecaState(WorkflowState):
         telemetry: Telemetry | None = None,
         policy_recommendations_path: Path = POLICY_RECOMMENDATIONS_PATH,
     ):
-        super().__init__(rule_client, receipt_ledger, activity_projection, telemetry)
+        super().__init__(
+            rule_client=rule_client,
+            receipt_ledger=receipt_ledger,
+            activity_projection=activity_projection,
+            telemetry=telemetry,
+        )
         self.data_dir = data_dir
         self.policy_recommendations_path = policy_recommendations_path
         self.delivered = False
