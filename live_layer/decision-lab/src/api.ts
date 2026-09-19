@@ -1,4 +1,5 @@
-import { AUTHORIZATION_ID, FIXTURE_ENVELOPE, FIXTURE_EVALUATION } from "./fixtures";
+import { AUTHORIZATION_ID, DEFAULT_DEMO_SCENARIO, FIXTURE_SCENARIOS } from "./fixtures";
+import type { DemoScenario } from "./fixtures";
 import type { Decision, DecisionEnvelope, DecisionRecordResult, EvaluationResult } from "./types";
 
 /**
@@ -12,19 +13,24 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 let delivered = false;
 let recordedDecision: Decision | null = null;
+let demoScenario: DemoScenario = DEFAULT_DEMO_SCENARIO;
+
+export function setDemoScenario(scenario: DemoScenario): void {
+  demoScenario = scenario;
+}
 
 /** Pulls the queued mock purchase. Resolves to null when it was already delivered. */
 export async function pullRequest(): Promise<DecisionEnvelope | null> {
   await sleep(250);
   if (delivered) return null;
   delivered = true;
-  return FIXTURE_ENVELOPE;
+  return FIXTURE_SCENARIOS[demoScenario].envelope;
 }
 
 export async function evaluateRequest(): Promise<EvaluationResult> {
   await sleep(600);
   if (!delivered) throw new Error("request_not_delivered");
-  return FIXTURE_EVALUATION;
+  return FIXTURE_SCENARIOS[demoScenario].evaluation;
 }
 
 export interface SubmitDecisionInput {

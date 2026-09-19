@@ -1,8 +1,15 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import visecaLogo from "../assets/viseca-logo.svg";
+import DynamicWalletPolicy from "./DynamicWalletPolicy.vue";
+import {
+  createPreviewPolicy,
+  createPreviewPolicyRepository,
+  type DynamicWalletPolicy as DynamicWalletPolicyDocument,
+  type DynamicWalletPolicyPatch,
+} from "../policy-settings";
 
-const emit = defineEmits<{ openWorkflow: [] }>();
+const emit = defineEmits<{ openWorkflow: []; openCards: [] }>();
 
 type Policy = {
   id: number;
@@ -26,6 +33,11 @@ const selectedCategory = ref<"All" | Policy["category"]>("All");
 const search = ref("");
 const showOnlyActive = ref(false);
 const lastAction = ref("");
+const initialDynamicPolicy = createPreviewPolicy();
+const dynamicPolicy = ref<DynamicWalletPolicyDocument>(initialDynamicPolicy);
+const policySaving = ref(false);
+const policyError = ref("");
+const policyRepository = createPreviewPolicyRepository(initialDynamicPolicy);
 const categories: Array<"All" | Policy["category"]> = ["All", "Spending", "Security", "Cards", "Notifications"];
 
 const filteredPolicies = computed(() => {
@@ -36,12 +48,30 @@ const filteredPolicies = computed(() => {
     return matchesCategory && matchesSearch && (!showOnlyActive.value || policy.enabled);
   });
 });
-const activeCount = computed(() => policies.value.filter((policy) => policy.enabled).length);
+const activeCount = computed(() => policies.value.filter((policy) => policy.enabled).length + Number(dynamicPolicy.value.enabled));
 
 function togglePolicy(policy: Policy): void {
   policy.enabled = !policy.enabled;
   policy.updated = "Updated just now";
   lastAction.value = `${policy.name} ${policy.enabled ? "enabled" : "disabled"}`;
+}
+
+async function updateDynamicPolicy(patch: Partial<DynamicWalletPolicyPatch>): Promise<void> {
+  if (policySaving.value) return;
+  policySaving.value = true;
+  policyError.value = "";
+  try {
+    dynamicPolicy.value = await policyRepository.updateDynamicWalletPolicy({
+      policyId: dynamicPolicy.value.policyId,
+      expectedRevision: dynamicPolicy.value.revision,
+      patch,
+    });
+    lastAction.value = "Dynamic wallet policy updated in this preview";
+  } catch (error) {
+    policyError.value = error instanceof Error ? error.message : "Unable to save the policy.";
+  } finally {
+    policySaving.value = false;
+  }
 }
 
 function iconPath(icon: Policy["icon"]): string {
@@ -58,18 +88,20 @@ function iconPath(icon: Policy["icon"]): string {
   <main class="policy-page">
     <header class="policy-topbar">
       <button class="policy-brand" type="button" aria-label="Return to agent simulation" @click="emit('openWorkflow')"><img :src="visecaLogo" alt="Viseca" /><span></span><strong>Settings</strong></button>
-      <div class="policy-topbar__right"><button class="policy-workflow-link" type="button" @click="emit('openWorkflow')">Agent simulation</button><button class="policy-help" type="button">Help centre</button><button class="policy-avatar" type="button" aria-label="Open account menu">JM</button></div>
+      <div class="policy-topbar__right"><button class="policy-workflow-link" type="button" aria-label="Open agent simulation" @click="emit('openWorkflow')"><span class="policy-workflow-link__full" aria-hidden="true">Agent simulation</span><span class="policy-workflow-link__short" aria-hidden="true">Simulation</span></button><button class="policy-help" type="button">Help centre</button><button class="policy-avatar" type="button" aria-label="Open account menu">JM</button></div>
     </header>
     <div class="policy-shell">
       <aside class="policy-sidebar" aria-label="Main navigation">
         <p class="policy-sidebar__label">CARD MANAGEMENT</p>
-        <nav><a href="#" class="policy-nav-link">Overview</a><a href="#" class="policy-nav-link policy-nav-link--active" aria-current="page">Wallet policies</a><a href="#" class="policy-nav-link">Cards</a><a href="#" class="policy-nav-link">Activity</a></nav>
+        <nav><a href="#" class="policy-nav-link">Overview</a><a href="#" class="policy-nav-link policy-nav-link--active" aria-current="page">Wallet policies</a><button type="button" class="policy-nav-link" @click="emit('openCards')">Cards</button><a href="#" class="policy-nav-link">Activity</a></nav>
         <a href="#" class="policy-nav-link policy-nav-link--bottom">Settings</a>
       </aside>
       <section class="policy-workspace">
         <div class="policy-breadcrumb"><span>Settings</span><i>/</i> Wallet policies</div>
         <div class="policy-heading"><div><p class="policy-eyebrow">YOUR CARD, YOUR RULES</p><h1>Wallet policies</h1><p class="policy-intro">Choose the rules that help keep your card use simple and secure.</p></div><div class="policy-summary" aria-label="Number of active policies"><span>{{ activeCount }}</span><p>active<br />policies</p></div></div>
-        <section class="policy-notice" aria-label="Policy information"><div class="policy-notice__icon">i</div><p>Changes are applied to your card immediately. You can update a policy at any time.</p></section>
+        <section class="policy-notice" aria-label="Policy information"><div class="policy-notice__icon">i</div><p>This preview keeps a versioned policy document in memory. It is ready for a policy API, but does not yet change card decisions.</p></section>
+        <DynamicWalletPolicy :policy="dynamicPolicy" :saving="policySaving" @change="updateDynamicPolicy" />
+        <p v-if="policyError" class="policy-error" role="alert">{{ policyError }}</p>
         <div class="policy-controls">
           <div class="policy-tabs" role="tablist" aria-label="Policy categories"><button v-for="category in categories" :key="category" type="button" :class="['policy-tab', { 'policy-tab--active': selectedCategory === category }]" :aria-selected="selectedCategory === category" @click="selectedCategory = category">{{ category }}</button></div>
           <div class="policy-control-actions"><label class="policy-search"><span>⌕</span><input v-model="search" type="search" placeholder="Search policies" /></label><button type="button" :class="['policy-filter', { 'policy-filter--on': showOnlyActive }]" @click="showOnlyActive = !showOnlyActive">☰&nbsp; Active only</button></div>
@@ -85,5 +117,10 @@ function iconPath(icon: Policy["icon"]): string {
         <div v-if="filteredPolicies.length === 0" class="policy-empty"><p>No policies match your filters.</p><button type="button" @click="search = ''; selectedCategory = 'All'; showOnlyActive = false">Clear filters</button></div>
       </section>
     </div>
+    <nav class="policy-mobile-nav" aria-label="Mobile navigation">
+      <button type="button" @click="emit('openWorkflow')">Simulation</button>
+      <button type="button" aria-current="page">Policies</button>
+      <button type="button" @click="emit('openCards')">Cards</button>
+    </nav>
   </main>
 </template>

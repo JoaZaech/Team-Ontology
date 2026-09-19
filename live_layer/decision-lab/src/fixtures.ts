@@ -138,3 +138,160 @@ export const FIXTURE_EVALUATION: EvaluationResult = {
   ],
   engine_version: "viseca-mock-rulebook-v1",
 };
+
+export type DemoScenario = "approve" | "decline" | "review";
+
+export interface DemoFixture {
+  label: string;
+  envelope: DecisionEnvelope;
+  evaluation: EvaluationResult;
+}
+
+const DECLINE_ENVELOPE: DecisionEnvelope = {
+  ...FIXTURE_ENVELOPE,
+  run_id: "RUN_MOCK_0002",
+  event_id: "EVT_MOCK_0002",
+  data: {
+    ...FIXTURE_ENVELOPE.data,
+    request_id: "req_mock_0002",
+    authorization: {
+      ...FIXTURE_ENVELOPE.data.authorization,
+      authorization_id: AUTHORIZATION_ID,
+      source_authorization_id: "AU0002",
+      amount: 46,
+      billing_amount_chf: 46,
+      items_subtotal: 39,
+      delivery_fee: 7,
+      purchase_description: "Large grocery delivery order",
+      items: [{
+        line_no: 1,
+        item_id: "IT0002",
+        item_name: "Family grocery basket",
+        item_category: "groceries",
+        item_details: "A larger basket of household groceries",
+        quantity: 1,
+        unit_price: 39,
+        currency: "CHF",
+      }],
+    },
+  },
+};
+
+const DECLINE_EVALUATION: EvaluationResult = {
+  authorization_id: AUTHORIZATION_ID,
+  recommended_decision: "decline",
+  reason_codes: ["purchase_limit_exceeded"],
+  checks: [
+    {
+      name: "buyer authority",
+      outcome: "pass",
+      reason_code: "buyer_authorized",
+      detail: "The active mandate is bound to this card.",
+    },
+    {
+      name: "requested basket",
+      outcome: "pass",
+      reason_code: "basket_matches_instruction",
+      detail: "The order contains ordinary grocery items.",
+    },
+    {
+      name: "order total",
+      outcome: "pass",
+      reason_code: "order_total_verified",
+      detail: "CHF 39.00 in items plus CHF 7.00 delivery.",
+    },
+    {
+      name: "Spend limit",
+      outcome: "fail",
+      reason_code: "purchase_limit_exceeded",
+      detail: "CHF 46.00 is above the CHF 20.00 purchase limit.",
+    },
+    {
+      name: "Merchant familiarity",
+      outcome: "pass",
+      reason_code: "merchant_catalogue_match",
+      detail: "Alpine Basket matches the catalogue; this card has 26 prior approved purchases there.",
+    },
+    {
+      name: "Recent attempts",
+      outcome: "pass",
+      reason_code: "attempt_velocity_normal",
+      detail: "0 earlier attempts in ten minutes; review starts at 3.",
+    },
+  ],
+  engine_version: "viseca-mock-rulebook-v1",
+};
+
+const REVIEW_ENVELOPE: DecisionEnvelope = {
+  ...FIXTURE_ENVELOPE,
+  run_id: "RUN_MOCK_0003",
+  event_id: "EVT_MOCK_0003",
+  data: {
+    ...FIXTURE_ENVELOPE.data,
+    request_id: "req_mock_0003",
+    authorization: {
+      ...FIXTURE_ENVELOPE.data.authorization,
+      authorization_id: AUTHORIZATION_ID,
+      source_authorization_id: "AU0003",
+      merchant: {
+        ...FIXTURE_ENVELOPE.data.authorization.merchant,
+        merchant_id: "ME0002",
+        merchant_name: "Fresh Basket Direct",
+        merchant_city: "Bern",
+      },
+    },
+  },
+};
+
+const REVIEW_EVALUATION: EvaluationResult = {
+  authorization_id: AUTHORIZATION_ID,
+  recommended_decision: "step_up",
+  reason_codes: ["merchant_unfamiliar_to_card"],
+  checks: [
+    {
+      name: "buyer authority",
+      outcome: "pass",
+      reason_code: "buyer_authorized",
+      detail: "The active mandate is bound to this card.",
+    },
+    {
+      name: "requested basket",
+      outcome: "pass",
+      reason_code: "basket_matches_instruction",
+      detail: "The order contains one grocery item.",
+    },
+    {
+      name: "order total",
+      outcome: "pass",
+      reason_code: "order_total_verified",
+      detail: "CHF 13.00 in items plus CHF 7.00 delivery.",
+    },
+    {
+      name: "Spend limit",
+      outcome: "pass",
+      reason_code: "purchase_within_limit",
+      detail: "CHF 20.00 is within the CHF 20.00 purchase limit.",
+    },
+    {
+      name: "Merchant familiarity",
+      outcome: "review",
+      reason_code: "merchant_unfamiliar_to_card",
+      detail: "Fresh Basket Direct is new for this card. Please confirm this merchant before the payment continues.",
+    },
+    {
+      name: "Recent attempts",
+      outcome: "pass",
+      reason_code: "attempt_velocity_normal",
+      detail: "0 earlier attempts in ten minutes; review starts at 3.",
+    },
+  ],
+  engine_version: "viseca-mock-rulebook-v1",
+};
+
+export const DEFAULT_DEMO_SCENARIO: DemoScenario = "approve";
+
+export const FIXTURE_SCENARIOS: Record<DemoScenario, DemoFixture> = {
+  approve: { label: "All checks pass", envelope: FIXTURE_ENVELOPE, evaluation: FIXTURE_EVALUATION },
+  decline: { label: "Over the limit", envelope: DECLINE_ENVELOPE, evaluation: DECLINE_EVALUATION },
+  review: { label: "New merchant", envelope: REVIEW_ENVELOPE, evaluation: REVIEW_EVALUATION },
+};
