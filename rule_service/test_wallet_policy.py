@@ -1,10 +1,10 @@
 import unittest
 from copy import deepcopy
 
+from fixtures import DATA_DIR, build_connection_event
 from guardian import MerchantHistory
 from rulebook import evaluate_request
 from testing_support import check_named
-from viseca_mock import DATA_DIR, build_connection_event
 from wallet_policy import (
     PolicyConflictError,
     WalletPolicyStore,

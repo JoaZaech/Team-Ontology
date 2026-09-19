@@ -11,6 +11,11 @@ export interface SubmitDecisionInput {
   reasonCodes: string[];
 }
 
+export interface ResolveDecisionInput {
+  authorizationId: string;
+  decision: Exclude<Decision, "step_up">;
+}
+
 function errorMessage(body: unknown, status: number): string {
   const error = body && typeof body === "object" ? (body as ApiErrorBody).error : undefined;
   if (typeof error === "string") {
@@ -68,6 +73,19 @@ export async function submitDecision(input: SubmitDecisionInput): Promise<Decisi
     }),
   });
   if (!result) throw new Error("The decision service did not confirm the recorded decision.");
+  return result;
+}
+
+export async function resolveDecision(input: ResolveDecisionInput): Promise<DecisionRecordResult> {
+  const result = await fetchJson<DecisionRecordResult>(`/v1/authorizations/${encodeURIComponent(input.authorizationId)}/resolve`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      authorization_id: input.authorizationId,
+      decision: input.decision,
+    }),
+  });
+  if (!result) throw new Error("The decision service did not confirm the customer response.");
   return result;
 }
 

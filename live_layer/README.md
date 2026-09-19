@@ -47,6 +47,17 @@ The local aggregate metric endpoints are `GET /v1/agent/observability` on port
 8081 and authenticated `GET /mock/observability` on port 8082. They are
 prototype inspection endpoints, not a production monitoring backend.
 
+Run the deterministic rulebook microbenchmark with:
+
+```bash
+python3 -B live_layer/evaluation_harness.py --runs 100
+```
+
+It reports the fixture, fixed input, and policy hashes alongside decision
+determinism and hot-path p50/p95/p99 evaluation time. It deliberately excludes
+HTTP, context retrieval, telemetry, receipt persistence, and deadline handling;
+measure those separately as end-to-end operational KPIs.
+
 ## Mock AI entry point
 
 Start the local server with `python3 -B live_layer/mock_api.py`, then send the

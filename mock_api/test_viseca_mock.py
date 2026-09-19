@@ -48,8 +48,8 @@ class VisecaMockTests(unittest.TestCase):
         self.assertEqual(envelope["data"]["type"], "authorization.request")
         self.assertEqual(state.evaluate()["recommended_decision"], "approve")
         self.assertIsNone(state.next_request())
-        body = {"authorization_id": MOCK_AUTHORIZATION_ID, "decision": "step_up",
-                "reason_codes": ["customer_confirmation"]}
+        body = {"authorization_id": MOCK_AUTHORIZATION_ID, "decision": "approve",
+                "reason_codes": []}
         self.assertEqual(state.record_decision(MOCK_AUTHORIZATION_ID, body)["status"],
                          "recorded")
         self.assertEqual(state.record_decision(MOCK_AUTHORIZATION_ID, body)["status"],
@@ -57,6 +57,59 @@ class VisecaMockTests(unittest.TestCase):
         state.reset()
         self.assertIsNone(state.decision)
         self.assertIsNotNone(state.next_request())
+
+    def test_policy_result_cannot_be_overridden_by_the_client(self):
+        state = MockVisecaState()
+        policy = state.policy_store.get()
+        state.policy_store.update({
+            "policyId": policy["policyId"],
+            "expectedRevision": policy["revision"],
+            "patch": {"dailySpendingLimitChf": 10},
+        })
+        state.next_request()
+        evaluation = state.evaluate()
+        self.assertEqual(evaluation["recommended_decision"], "decline")
+        with self.assertRaisesRegex(ValueError, "decision_does_not_match_policy"):
+            state.record_decision(MOCK_AUTHORIZATION_ID, {
+                "authorization_id": MOCK_AUTHORIZATION_ID,
+                "decision": "approve",
+                "reason_codes": [],
+            })
+        with self.assertRaisesRegex(ValueError, "reason_codes_do_not_match_policy"):
+            state.record_decision(MOCK_AUTHORIZATION_ID, {
+                "authorization_id": MOCK_AUTHORIZATION_ID,
+                "decision": "decline",
+                "reason_codes": ["client_invented_reason"],
+            })
+        result = state.record_decision(MOCK_AUTHORIZATION_ID, {
+            "authorization_id": MOCK_AUTHORIZATION_ID,
+            "decision": "decline",
+            "reason_codes": evaluation["reason_codes"],
+        })
+        self.assertEqual(result["decision"], "decline")
+
+    def test_step_up_requires_a_customer_resolution(self):
+        state = MockVisecaState()
+        policy = state.policy_store.get()
+        state.policy_store.update({
+            "policyId": policy["policyId"],
+            "expectedRevision": policy["revision"],
+            "patch": {"reviewTriggers": ["online_purchase"]},
+        })
+        state.next_request()
+        evaluation = state.evaluate()
+        self.assertEqual(evaluation["recommended_decision"], "step_up")
+        recorded = state.record_decision(MOCK_AUTHORIZATION_ID, {
+            "authorization_id": MOCK_AUTHORIZATION_ID,
+            "decision": "step_up",
+            "reason_codes": evaluation["reason_codes"],
+        })
+        self.assertEqual(recorded["decision"], "step_up")
+        resolved = state.resolve_decision(MOCK_AUTHORIZATION_ID, {
+            "authorization_id": MOCK_AUTHORIZATION_ID,
+            "decision": "approve",
+        })
+        self.assertEqual(resolved["status"], "resolved")
 
     def test_root_page_serves_the_built_decision_lab_app(self):
         # The built UI is served by this mock and calls its request, evaluation,
@@ -72,6 +125,7 @@ class VisecaMockTests(unittest.TestCase):
         self.assertIn("/v1/decision-requests/next?wait=0", bundle)
         self.assertIn("/mock/evaluate", bundle)
         self.assertIn("/mock/policy", bundle)
+        self.assertIn("/resolve", bundle)
 
 
 if __name__ == "__main__":

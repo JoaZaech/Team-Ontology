@@ -275,8 +275,28 @@ class MockVisecaState:
             raise ValueError("authorization_id_mismatch")
         if body.get("decision") not in ("approve", "decline", "step_up"):
             raise ValueError("invalid_decision")
+        if self.event is None or self.policy_snapshot is None:
+            raise ValueError("request_not_delivered")
+        evaluation = self.evaluate()
+        if body["decision"] != evaluation["recommended_decision"]:
+            raise ValueError("decision_does_not_match_policy")
+        recorded_at = now or _utc_now()
+        submitted_reason_codes = body.get("reason_codes")
+        if submitted_reason_codes is None:
+            reason_codes = list(evaluation["reason_codes"])
+        elif (
+            isinstance(submitted_reason_codes, str)
+            or not isinstance(submitted_reason_codes, (list, tuple))
+            or not all(isinstance(reason_code, str) and reason_code for reason_code in submitted_reason_codes)
+        ):
+            raise ValueError("invalid_reason_codes")
+        elif list(submitted_reason_codes) != evaluation["reason_codes"]:
+            raise ValueError("reason_codes_do_not_match_policy")
+        else:
+            reason_codes = list(submitted_reason_codes)
+        recorded_body = {**body, "reason_codes": reason_codes}
         if self.decision is not None:
-            if self.decision != body:
+            if self.decision != recorded_body:
                 raise ValueError("decision_conflict")
             receipt = self.receipt_ledger.get(self._receipt_key("decision"))
             return {
@@ -284,9 +304,6 @@ class MockVisecaState:
                 "status": "already_recorded",
                 **({"decision_receipt_hash": receipt["receipt_hash"]} if receipt else {}),
             }
-        if self.event is None or self.policy_snapshot is None:
-            raise ValueError("request_not_delivered")
-        recorded_at = now or _utc_now()
         if recorded_at > _parse_time(self.event["deadline_at"]):
             self.telemetry.event(
                 "decision.deadline_missed",
@@ -295,14 +312,6 @@ class MockVisecaState:
                 attributes={"deadline_missed": True},
             )
             raise ValueError("decision_deadline_exceeded")
-        reason_codes = body.get("reason_codes", [])
-        if (
-            isinstance(reason_codes, str)
-            or not isinstance(reason_codes, (list, tuple))
-            or not all(isinstance(reason_code, str) and reason_code for reason_code in reason_codes)
-        ):
-            raise ValueError("invalid_reason_codes")
-        evaluation = self.evaluate()
         with self.telemetry.span(
             "decision.record",
             trace=self.trace,
@@ -311,7 +320,7 @@ class MockVisecaState:
             receipt = self.receipt_ledger.append(
                 authorization_id=authorization_id,
                 idempotency_key=self._receipt_key("decision"),
-                decision=body["decision"],
+                decision=recorded_body["decision"],
                 policy_hash=_policy_hash(self.policy_snapshot),
                 policy_version=self.policy_snapshot["revision"],
                 engine_version=evaluation["engine_version"],
@@ -330,8 +339,8 @@ class MockVisecaState:
                 deadline_at=self.event["deadline_at"],
                 deadline_remaining_ms=_deadline_remaining_ms(self.event["deadline_at"], recorded_at),
             )
-        self.decision = body
-        if body["decision"] == "step_up":
+        self.decision = recorded_body
+        if recorded_body["decision"] == "step_up":
             self.step_up_recorded_at = recorded_at
             self.telemetry.event(
                 "decision.step_up",
@@ -343,7 +352,7 @@ class MockVisecaState:
             trace=self.trace,
             labels={
                 "component": "viseca_mock",
-                "outcome": body["decision"],
+                "outcome": recorded_body["decision"],
                 "status": "recorded",
             },
             attributes={
@@ -355,7 +364,7 @@ class MockVisecaState:
         return {
             "authorization_id": authorization_id,
             "status": "recorded",
-            "decision": body["decision"],
+            "decision": recorded_body["decision"],
             "decision_receipt_hash": receipt["receipt_hash"],
         }
 

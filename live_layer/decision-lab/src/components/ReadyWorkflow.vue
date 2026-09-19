@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
-import { evaluateRequest, pullRequest, resetRequestRun, submitDecision } from "../api";
-import type { Check, Decision, DecisionEnvelope, EvaluationResult } from "../types";
+import { evaluateRequest, pullRequest, resetRequestRun, resolveDecision, submitDecision } from "../api";
+import type { Decision, DecisionEnvelope, EvaluationResult } from "../types";
 import visecaLogo from "../assets/viseca-logo.svg";
 import DecisionReceipt from "./DecisionReceipt.vue";
 
@@ -21,13 +21,8 @@ const declineButton = ref<HTMLButtonElement | null>(null);
 let mounted = true;
 let runSequence = 0;
 
-const failedChecks = computed(() => evaluation.value?.checks.filter((check) => check.outcome === "fail") ?? []);
 const reviewChecks = computed(() => evaluation.value?.checks.filter((check) => check.outcome === "review") ?? []);
 const authorization = computed(() => purchase.value?.data.authorization ?? null);
-
-function reasonCodes(checks: Check[]): string[] {
-  return checks.map((check) => check.reason_code);
-}
 
 function isCurrentRun(sequence: number): boolean {
   return mounted && sequence === runSequence;
@@ -35,7 +30,7 @@ function isCurrentRun(sequence: number): boolean {
 
 const pause = (milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
-async function recordDecision(decision: Decision): Promise<boolean> {
+async function recordEngineDecision(decision: Decision): Promise<boolean> {
   if (!evaluation.value || recording.value) return false;
   recording.value = true;
   error.value = null;
@@ -43,16 +38,39 @@ async function recordDecision(decision: Decision): Promise<boolean> {
     await submitDecision({
       authorizationId: evaluation.value.authorization_id,
       decision,
-      reasonCodes: reasonCodes(evaluation.value.checks),
+      reasonCodes: evaluation.value.reason_codes,
     });
     if (mounted) {
-      declinedByCustomer.value = decision === "decline" && reviewChecks.value.length > 0 && failedChecks.value.length === 0;
-      approvedByCustomer.value = decision === "approve" && reviewChecks.value.length > 0 && failedChecks.value.length === 0;
-      stage.value = decision === "approve" ? "approved" : "declined";
+      declinedByCustomer.value = false;
+      approvedByCustomer.value = false;
+      if (decision !== "step_up") stage.value = decision === "approve" ? "approved" : "declined";
     }
     return true;
   } catch {
     if (mounted) error.value = "We could not record this decision. No payment was approved.";
+    return false;
+  } finally {
+    if (mounted) recording.value = false;
+  }
+}
+
+async function resolveCustomerDecision(decision: Exclude<Decision, "step_up">): Promise<boolean> {
+  if (!evaluation.value || recording.value) return false;
+  recording.value = true;
+  error.value = null;
+  try {
+    await resolveDecision({
+      authorizationId: evaluation.value.authorization_id,
+      decision,
+    });
+    if (mounted) {
+      declinedByCustomer.value = decision === "decline";
+      approvedByCustomer.value = decision === "approve";
+      stage.value = decision === "approve" ? "approved" : "declined";
+    }
+    return true;
+  } catch {
+    if (mounted) error.value = "We could not record your response. No payment was approved.";
     return false;
   } finally {
     if (mounted) recording.value = false;
@@ -98,12 +116,14 @@ async function runWorkflow(): Promise<void> {
     await pause(450);
     if (!isCurrentRun(sequence)) return;
     if (result.checks.some((check) => check.outcome === "fail")) {
-      const recorded = await recordDecision("decline");
+      const recorded = await recordEngineDecision("decline");
       if (!recorded && isCurrentRun(sequence)) stage.value = "error";
     } else if (result.checks.some((check) => check.outcome === "review")) {
-      await requestHumanDecision();
+      const recorded = await recordEngineDecision("step_up");
+      if (recorded && isCurrentRun(sequence)) await requestHumanDecision();
+      if (!recorded && isCurrentRun(sequence)) stage.value = "error";
     } else {
-      const recorded = await recordDecision("approve");
+      const recorded = await recordEngineDecision("approve");
       if (!recorded && isCurrentRun(sequence)) stage.value = "error";
     }
   } catch {
@@ -188,7 +208,7 @@ onBeforeUnmount(() => {
             class="decision-dialog__button decision-dialog__button--decline"
             type="button"
             :disabled="recording"
-            @click="recordDecision('decline')"
+            @click="resolveCustomerDecision('decline')"
           >
             {{ recording ? "Recording decision…" : "Do not approve" }}
           </button>
@@ -196,7 +216,7 @@ onBeforeUnmount(() => {
             class="decision-dialog__button decision-dialog__button--approve"
             type="button"
             :disabled="recording"
-            @click="recordDecision('approve')"
+            @click="resolveCustomerDecision('approve')"
           >
             Approve purchase
           </button>

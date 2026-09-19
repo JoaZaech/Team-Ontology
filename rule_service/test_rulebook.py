@@ -1,10 +1,10 @@
 import unittest
 from copy import deepcopy
 
+from fixtures import DATA_DIR, build_connection_event
 from guardian import MerchantHistory
 from rulebook import evaluate_request
 from testing_support import check_names
-from viseca_mock import DATA_DIR, build_connection_event
 
 
 class RulebookTests(unittest.TestCase):
